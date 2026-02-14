@@ -1,24 +1,25 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+let _resend: Resend | null = null;
+
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 export async function sendPhishingEmail(params: {
   to: string;
   subject: string;
   html: string;
 }) {
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || "security@cyberdrill.local",
+  const { error } = await getResend().emails.send({
+    from: process.env.RESEND_FROM || "CyberDrill <noreply@cyberdrill.local>",
     to: params.to,
     subject: params.subject,
     html: params.html,
   });
+
+  if (error) throw new Error(error.message);
 }

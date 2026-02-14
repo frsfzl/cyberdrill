@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
     "@ngrok/ngrok",
     "express",
     "retell-sdk",
-    "nodemailer",
     "single-file-cli",
   ],
 };
