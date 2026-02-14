@@ -6,21 +6,34 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Plus,
+  ArrowRight,
+  Search,
+  Filter,
+  Target,
+  Mail,
+  Phone,
+  Calendar,
+  TrendingUp
+} from "lucide-react";
 import type { Campaign } from "@/types";
 
-const statusColors: Record<string, string> = {
-  draft: "bg-secondary text-secondary-foreground",
-  capturing: "bg-yellow-500/20 text-yellow-500",
-  generating: "bg-blue-500/20 text-blue-500",
-  ready: "bg-green-500/20 text-green-500",
-  delivering: "bg-purple-500/20 text-purple-500",
-  active: "bg-green-600/20 text-green-600",
-  closed: "bg-muted text-muted-foreground",
+const statusConfig: Record<string, { color: string; label: string; icon?: string }> = {
+  draft: { color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20", label: "Draft" },
+  capturing: { color: "bg-amber-500/10 text-amber-400 border-amber-500/20", label: "Capturing" },
+  generating: { color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20", label: "Generating" },
+  ready: { color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", label: "Ready" },
+  delivering: { color: "bg-violet-500/10 text-violet-400 border-violet-500/20", label: "Delivering" },
+  active: { color: "bg-green-500/10 text-green-400 border-green-500/20", label: "Active" },
+  closed: { color: "bg-zinc-600/10 text-zinc-500 border-zinc-600/20", label: "Closed" },
 };
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
     fetch("/api/campaigns")
@@ -29,63 +42,202 @@ export default function CampaignsPage() {
       .catch(() => {});
   }, []);
 
+  const filteredCampaigns = campaigns.filter((campaign) => {
+    const matchesSearch = campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      campaign.company_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterStatus === "all" || campaign.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
+  const stats = {
+    total: campaigns.length,
+    active: campaigns.filter((c) => c.status === "active").length,
+    draft: campaigns.filter((c) => c.status === "draft").length,
+    closed: campaigns.filter((c) => c.status === "closed").length,
+  };
+
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Campaigns</h2>
-        <Link href="/dashboard/campaigns/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Campaign
-          </Button>
-        </Link>
-      </div>
-
-      {campaigns.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">No campaigns yet</p>
-            <Link href="/dashboard/campaigns/new">
-              <Button>Create your first campaign</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {campaigns.map((campaign) => (
-            <Card key={campaign.id}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div>
-                  <CardTitle className="text-lg">{campaign.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {campaign.pretext_scenario || "No scenario set"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className={statusColors[campaign.status] || ""}>
-                    {campaign.status}
-                  </Badge>
-                  <Link href={`/dashboard/campaigns/${campaign.id}`}>
-                    <Button variant="ghost" size="icon">
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-6 text-sm text-muted-foreground">
-                  <span>{campaign.target_employee_ids.length} targets</span>
-                  <span>{campaign.company_name}</span>
-                  <span>
-                    Created{" "}
-                    {new Date(campaign.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Header Section */}
+      <div className="space-y-8">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1.5">
+            <h1 className="text-4xl font-bold tracking-tight">Campaigns</h1>
+            <p className="text-muted-foreground text-lg">
+              Manage and monitor your phishing simulation campaigns
+            </p>
+          </div>
+          <Link href="/dashboard/campaigns/new">
+            <Button size="lg" className="gap-2 shadow-lg shadow-primary/20">
+              <Plus className="h-4 w-4" />
+              New Campaign
+            </Button>
+          </Link>
         </div>
-      )}
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-4 gap-4">
+          <Card className="border-l-4 border-l-primary">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Campaigns</p>
+                  <p className="text-3xl font-bold mt-2">{stats.total}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-muted-foreground/40" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-green-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Active</p>
+                  <p className="text-3xl font-bold mt-2">{stats.active}</p>
+                </div>
+                <Target className="h-8 w-8 text-green-500/40" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-zinc-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Drafts</p>
+                  <p className="text-3xl font-bold mt-2">{stats.draft}</p>
+                </div>
+                <Filter className="h-8 w-8 text-zinc-500/40" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-muted">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                  <p className="text-3xl font-bold mt-2">{stats.closed}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-muted-foreground/40" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Search and Filter */}
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search campaigns..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="active">Active</option>
+            <option value="ready">Ready</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+
+        {/* Campaigns List */}
+        {filteredCampaigns.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <div className="rounded-full bg-muted p-6 mb-6">
+                <Target className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">
+                {campaigns.length === 0 ? "No campaigns yet" : "No matching campaigns"}
+              </h3>
+              <p className="text-muted-foreground mb-6 text-center max-w-md">
+                {campaigns.length === 0
+                  ? "Get started by creating your first phishing simulation campaign"
+                  : "Try adjusting your search or filters"}
+              </p>
+              {campaigns.length === 0 && (
+                <Link href="/dashboard/campaigns/new">
+                  <Button size="lg">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Campaign
+                  </Button>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {filteredCampaigns.map((campaign) => {
+              const statusInfo = statusConfig[campaign.status] || statusConfig.draft;
+
+              return (
+                <Card key={campaign.id} className="group hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-3">
+                          <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                            {campaign.name}
+                          </CardTitle>
+                          <Badge variant="outline" className={`${statusInfo.color} border`}>
+                            {statusInfo.label}
+                          </Badge>
+                        </div>
+                        <p className="text-muted-foreground">
+                          {campaign.pretext_scenario || "No scenario configured"}
+                        </p>
+                      </div>
+                      <Link href={`/dashboard/campaigns/${campaign.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <ArrowRight className="h-5 w-5" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-4 gap-6 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Target className="h-4 w-4" />
+                        <span className="font-medium">{campaign.target_employee_ids.length}</span>
+                        <span>targets</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span>{campaign.generated_email ? "Email ready" : "Pending"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <span>{campaign.generated_vishing_script ? "Script ready" : "Pending"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(campaign.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">{campaign.company_name}</span>
+                        {campaign.industry && ` • ${campaign.industry}`}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </DashboardShell>
   );
 }

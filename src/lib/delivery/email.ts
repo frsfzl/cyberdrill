@@ -15,7 +15,7 @@ export async function sendPhishingEmail(params: {
   html: string;
 }) {
   const { error } = await getResend().emails.send({
-    from: process.env.RESEND_FROM || "CyberDrill <noreply@cyberdrill.local>",
+    from: process.env.RESEND_FROM || "CyberDrill <noreply@zerobet.ai>",
     to: params.to,
     subject: params.subject,
     html: params.html,
