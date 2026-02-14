@@ -31,6 +31,9 @@ create table campaigns (
   ngrok_url text,
   generated_email jsonb,
   generated_vishing_script text,
+  delivery_method text not null default 'email'
+    check (delivery_method in ('email','vapi','both')),
+  vapi_delay_minutes integer not null default 5,
   target_employee_ids uuid[] not null default '{}',
   delivery_window jsonb not null default '{"start":"","end":""}',
   created_at timestamptz not null default now(),

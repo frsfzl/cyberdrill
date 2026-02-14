@@ -24,7 +24,8 @@ import {
   Building2,
   Briefcase,
   Globe,
-  Shield
+  Shield,
+  Phone
 } from "lucide-react";
 import type { Employee } from "@/types";
 
@@ -84,6 +85,8 @@ export default function NewCampaignPage() {
     login_page_url: "",
     delivery_window_start: "",
     delivery_window_end: "",
+    delivery_method: "email" as "email" | "vapi" | "both",
+    vapi_delay_minutes: 5,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -410,6 +413,115 @@ export default function NewCampaignPage() {
                   {errors.pretext}
                 </p>
               )}
+
+              {/* Delivery Method Selection */}
+              <div className="rounded-lg border p-6 space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-3">Delivery Method</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Choose how to deliver this simulation to employees
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Email Only */}
+                  <label className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    form.delivery_method === "email" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="delivery_method"
+                      value="email"
+                      checked={form.delivery_method === "email"}
+                      onChange={(e) => setForm({ ...form, delivery_method: e.target.value as any })}
+                      className="mt-1 h-4 w-4 text-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Mail className="h-5 w-5 text-primary" />
+                        Email Only
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Send phishing emails with landing page link
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* VAPI Only */}
+                  <label className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    form.delivery_method === "vapi" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="delivery_method"
+                      value="vapi"
+                      checked={form.delivery_method === "vapi"}
+                      onChange={(e) => setForm({ ...form, delivery_method: e.target.value as any })}
+                      className="mt-1 h-4 w-4 text-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Phone className="h-5 w-5 text-primary" />
+                        Voice Calls Only (VAPI)
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        AI-powered vishing calls without email
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Both */}
+                  <label className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    form.delivery_method === "both" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="delivery_method"
+                      value="both"
+                      checked={form.delivery_method === "both"}
+                      onChange={(e) => setForm({ ...form, delivery_method: e.target.value as any })}
+                      className="mt-1 h-4 w-4 text-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium">
+                        <div className="flex items-center gap-1">
+                          <Mail className="h-5 w-5 text-primary" />
+                          <span className="text-xs text-muted-foreground">+</span>
+                          <Phone className="h-5 w-5 text-primary" />
+                        </div>
+                        Email + Voice Follow-up
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Send email first, then follow up with AI call (Recommended)
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Call Delay (shown for vapi or both) */}
+                {(form.delivery_method === "vapi" || form.delivery_method === "both") && (
+                  <div className="mt-4 p-4 rounded-lg bg-muted/50 space-y-2">
+                    <Label htmlFor="vapi_delay">
+                      {form.delivery_method === "both" ? "Call Delay (minutes after email)" : "Call Delay (minutes after campaign start)"}
+                    </Label>
+                    <Input
+                      type="number"
+                      id="vapi_delay"
+                      value={form.vapi_delay_minutes}
+                      onChange={(e) => setForm({ ...form, vapi_delay_minutes: parseInt(e.target.value) || 5 })}
+                      min="1"
+                      max="60"
+                      className="w-40"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {form.delivery_method === "both"
+                        ? `Calls will be made ${form.vapi_delay_minutes} minutes after email delivery`
+                        : `Calls will start ${form.vapi_delay_minutes} minutes after campaign launch`
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <div className="flex justify-between gap-3">
                 <Button variant="outline" onClick={() => setStep(1)}>

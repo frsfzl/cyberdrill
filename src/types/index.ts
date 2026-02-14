@@ -22,6 +22,8 @@ export type CampaignStatus =
   | "active"
   | "closed";
 
+export type DeliveryMethod = "email" | "vapi" | "both";
+
 export interface Campaign {
   id: string;
   name: string;
@@ -37,6 +39,8 @@ export interface Campaign {
     body: string;
   };
   generated_vishing_script?: string;
+  delivery_method?: DeliveryMethod;
+  vapi_delay_minutes?: number;
   target_employee_ids: string[];
   delivery_window: {
     start: string;
