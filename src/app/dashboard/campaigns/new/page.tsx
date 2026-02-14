@@ -117,16 +117,20 @@ export default function NewCampaignPage() {
 
     if (stepNum === 1) {
       if (!form.name.trim()) newErrors.name = "Campaign name is required";
-      if (!form.login_page_url.trim()) newErrors.login_page_url = "Login page URL is required";
-      if (form.login_page_url && !/^https?:\/\/.+/.test(form.login_page_url)) {
-        newErrors.login_page_url = "Please enter a valid URL";
-      }
     }
 
     if (stepNum === 2) {
       if (!selectedPretext) newErrors.pretext = "Please select a pretext scenario";
       if (selectedPretext === "custom" && !customPretext.trim()) {
         newErrors.customPretext = "Please describe your custom scenario";
+      }
+      // Only require login_page_url if email delivery is enabled
+      const needsEmail = form.delivery_method === "email" || form.delivery_method === "both";
+      if (needsEmail) {
+        if (!form.login_page_url.trim()) newErrors.login_page_url = "Login page URL is required for email delivery";
+        if (form.login_page_url && !/^https?:\/\/.+/.test(form.login_page_url)) {
+          newErrors.login_page_url = "Please enter a valid URL";
+        }
       }
     }
 
@@ -301,35 +305,6 @@ export default function NewCampaignPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="login_page_url" className="flex items-center gap-2">
-                  Login Page URL to Clone <span className="text-destructive">*</span>
-                  <span className="text-xs text-muted-foreground font-normal">
-                    (Will be captured with SingleFile)
-                  </span>
-                </Label>
-                <div className="relative">
-                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="login_page_url"
-                    value={form.login_page_url}
-                    onChange={(e) => setForm({ ...form, login_page_url: e.target.value })}
-                    placeholder="https://login.example.com"
-                    className={`pl-10 ${errors.login_page_url ? "border-destructive" : ""}`}
-                  />
-                </div>
-                {errors.login_page_url && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {errors.login_page_url}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground flex items-start gap-1.5 mt-2">
-                  <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                  This URL will be cloned pixel-for-pixel and served via ngrok tunnel
-                </p>
-              </div>
-
               <div className="flex justify-end gap-3">
                 <Button onClick={handleNext} size="lg" className="px-8">
                   Next Step
@@ -498,30 +473,46 @@ export default function NewCampaignPage() {
                   </label>
                 </div>
 
-                {/* Call Delay (shown for vapi or both) */}
-                {(form.delivery_method === "vapi" || form.delivery_method === "both") && (
-                  <div className="mt-4 p-4 rounded-lg bg-muted/50 space-y-2">
-                    <Label htmlFor="vapi_delay">
-                      {form.delivery_method === "both" ? "Call Delay (minutes after email)" : "Call Delay (minutes after campaign start)"}
-                    </Label>
-                    <Input
-                      type="number"
-                      id="vapi_delay"
-                      value={form.vapi_delay_minutes}
-                      onChange={(e) => setForm({ ...form, vapi_delay_minutes: parseInt(e.target.value) || 5 })}
-                      min="1"
-                      max="60"
-                      className="w-40"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {form.delivery_method === "both"
-                        ? `Calls will be made ${form.vapi_delay_minutes} minutes after email delivery`
-                        : `Calls will start ${form.vapi_delay_minutes} minutes after campaign launch`
-                      }
+                {/* Call Delay - REMOVED, now immediate */}
+              </div>
+
+              {/* Login Page URL (only for email delivery) */}
+              {(form.delivery_method === "email" || form.delivery_method === "both") && (
+                <div className="rounded-lg border p-6 space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-1">Login Page to Clone</h3>
+                    <p className="text-sm text-muted-foreground">
+                      The page will be captured pixel-for-pixel and served via ngrok tunnel
                     </p>
                   </div>
-                )}
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login_page_url" className="flex items-center gap-2">
+                      Login Page URL <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login_page_url"
+                        value={form.login_page_url}
+                        onChange={(e) => setForm({ ...form, login_page_url: e.target.value })}
+                        placeholder="https://login.example.com"
+                        className={`pl-10 ${errors.login_page_url ? "border-destructive" : ""}`}
+                      />
+                    </div>
+                    {errors.login_page_url && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.login_page_url}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground flex items-start gap-1.5 mt-2">
+                      <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                      This URL will be cloned using SingleFile and modified to capture credentials
+                    </p>
+                  </div>
+                </div>
+              )}
+
 
               <div className="flex justify-between gap-3">
                 <Button variant="outline" onClick={() => setStep(1)}>

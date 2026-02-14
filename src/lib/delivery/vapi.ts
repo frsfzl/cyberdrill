@@ -23,13 +23,43 @@ export async function makeVapiCall(params: VapiCallParams): Promise<VapiCallResu
     throw new Error('VAPI credentials not configured');
   }
 
-  // Create assistant configuration with the vishing script
+  // Ensure phone number is in E.164 format (starts with +)
+  // If no country code, assume US (+1)
+  let phoneNumber = params.toNumber.replace(/\D/g, ''); // Remove non-digits
+
+  if (!params.toNumber.startsWith('+')) {
+    // If 10 digits, assume US number (add +1)
+    if (phoneNumber.length === 10) {
+      phoneNumber = `+1${phoneNumber}`;
+    } else if (phoneNumber.length === 11 && phoneNumber.startsWith('1')) {
+      // Already has 1 prefix, just add +
+      phoneNumber = `+${phoneNumber}`;
+    } else {
+      // Otherwise just add +
+      phoneNumber = `+${phoneNumber}`;
+    }
+  } else {
+    phoneNumber = params.toNumber;
+  }
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`[VAPI] 📞 Initiating outbound call`);
+  console.log(`[VAPI] 👤 To: ${params.employeeName || 'Employee'}`);
+  console.log(`[VAPI] 📱 Number: ${phoneNumber}`);
+  console.log(`[VAPI] 🏢 Company: ${params.companyName || 'N/A'}`);
+  console.log(`[VAPI] 📞 Phone Number ID: ${phoneNumberId}`);
+  console.log(`[VAPI] 📝 Script length: ${params.script.length} chars`);
+
+  // Use inline assistant configuration for dynamic per-call customization
   const assistant = {
     model: {
       provider: 'openai',
       model: 'gpt-3.5-turbo',
       temperature: 0.7,
-      systemPrompt: `You are a professional IT Security representative from ${params.companyName || 'the company'}.
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional IT Security representative from ${params.companyName || 'the company'}.
 
 Your goal is to deliver the following security message to ${params.employeeName || 'the employee'}:
 
@@ -41,44 +71,58 @@ IMPORTANT GUIDELINES:
 - Create urgency but don't be aggressive
 - If asked questions, redirect to "checking the email we sent"
 - Keep the call under 2 minutes
-- End by thanking them for their cooperation`,
+- End by thanking them for their cooperation`
+        }
+      ]
     },
     voice: {
       provider: '11labs',
-      voiceId: 'bIHbv24MWmeRgasZH58o', // Professional male voice
+      voiceId: 'bIHbv24MWmeRgasZH58o' // Professional male voice
     },
     firstMessage: `Hello, this is ${params.companyName || 'IT'} Security Department. May I speak with ${params.employeeName || 'you'}?`,
     endCallMessage: 'Thank you for your time. Have a great day.',
-    endCallPhrases: ['goodbye', 'hang up', 'end call', 'bye'],
+    endCallPhrases: ['goodbye', 'hang up', 'end call', 'bye']
   };
 
-  console.log(`[VAPI] Making call to ${params.toNumber}...`);
-  console.log(`[VAPI] Using phone number ID: ${phoneNumberId}`);
+  const requestBody = {
+    phoneNumberId,
+    customer: {
+      number: phoneNumber,
+      numberE164CheckEnabled: false
+    },
+    assistant
+  };
 
-  // Make the outbound call
+  console.log(`[VAPI] 🚀 Sending API request...`);
+  console.log(`[VAPI] Request body:`, JSON.stringify(requestBody, null, 2));
+
   const response = await fetch('https://api.vapi.ai/call/phone', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      phoneNumberId,
-      customer: {
-        number: params.toNumber,
-      },
-      assistant,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   const responseText = await response.text();
-  console.log(`[VAPI] Response (${response.status}):`, responseText);
+
+  console.log(`[VAPI] 📥 Response status: ${response.status}`);
+  console.log(`[VAPI] 📥 Response body:`, responseText);
 
   if (!response.ok) {
+    console.error(`[VAPI] ❌ API request failed`);
+    console.error(`[VAPI] Status: ${response.status}`);
+    console.error(`[VAPI] Body:`, responseText);
     throw new Error(`VAPI call failed (${response.status}): ${responseText}`);
   }
 
   const data = JSON.parse(responseText);
+
+  console.log(`[VAPI] ✅ Call successfully initiated!`);
+  console.log(`[VAPI] 📞 Call ID: ${data.id}`);
+  console.log(`[VAPI] 📊 Status: ${data.status || 'initiated'}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   return {
     callId: data.id,

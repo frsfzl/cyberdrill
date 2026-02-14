@@ -24,11 +24,22 @@ export async function POST(req: NextRequest) {
       login_page_url,
       target_employee_ids,
       delivery_window,
+      delivery_method,
+      vapi_delay_minutes,
     } = body;
 
-    if (!name || !login_page_url) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Name and login page URL are required" },
+        { error: "Campaign name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Only require login_page_url for email delivery
+    const needsEmail = !delivery_method || delivery_method === "email" || delivery_method === "both";
+    if (needsEmail && !login_page_url) {
+      return NextResponse.json(
+        { error: "Login page URL is required for email delivery" },
         { status: 400 }
       );
     }
@@ -39,9 +50,11 @@ export async function POST(req: NextRequest) {
       pretext_scenario: pretext_scenario || "",
       company_name: company_name || "",
       industry: industry || "",
-      login_page_url,
+      login_page_url: login_page_url || "",
       target_employee_ids: target_employee_ids || [],
       delivery_window: delivery_window || { start: "", end: "" },
+      delivery_method: delivery_method || "email",
+      vapi_delay_minutes: vapi_delay_minutes || 5,
     });
 
     return NextResponse.json(campaign, { status: 201 });
