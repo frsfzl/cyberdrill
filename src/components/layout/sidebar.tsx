@@ -10,6 +10,10 @@ import {
   BarChart3,
   Shield,
   AlertTriangle,
+  Settings,
+  LogOut,
+  ChevronUp,
+  User,
 } from "lucide-react";
 
 const navItems = [
@@ -146,10 +150,7 @@ export function Sidebar() {
                 {item.label}
               </span>
 
-              {/* Active indicator dot */}
-              {isActive && (
-                <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              )}
+
 
               {/* Hover glow effect */}
               {!isActive && (
@@ -160,12 +161,9 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom section */}
-      <div className="p-4 border-t border-white/[0.06]">
-        <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-          <p className="text-xs text-neutral-500 mb-1">Current Plan</p>
-          <p className="text-sm font-medium text-white">Professional</p>
-        </div>
+      {/* Profile Section - No border */}
+      <div className="p-4">
+        <ProfileDropdown />
       </div>
 
       {/* CSS Animations */}
@@ -197,5 +195,74 @@ export function Sidebar() {
         }
       `}</style>
     </aside>
+  );
+}
+
+// Profile Dropdown Component
+function ProfileDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      {/* Profile Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 group"
+      >
+        {/* Avatar */}
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30 flex items-center justify-center">
+          <User className="h-4 w-4 text-blue-400" />
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 text-left">
+          <p className="text-sm font-medium text-white">Admin</p>
+          <p className="text-xs text-neutral-500">admin@cyberdrill.com</p>
+        </div>
+
+        {/* Chevron */}
+        <ChevronUp 
+          className={`h-4 w-4 text-neutral-500 transition-transform duration-300 ${
+            isOpen ? "" : "rotate-180"
+          }`} 
+        />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Menu */}
+          <div className="absolute bottom-full left-4 right-4 mb-2 p-2 rounded-xl bg-[#111118] border border-white/[0.08] shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-300 hover:text-white hover:bg-white/[0.05] transition-colors">
+              <Settings className="h-4 w-4" />
+              Settings
+            </button>
+            <div className="my-1 border-t border-white/[0.06]" />
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
