@@ -47,10 +47,11 @@ create table interactions (
   employee_id uuid not null references employees(id) on delete cascade,
   tracking_token uuid not null unique default uuid_generate_v4(),
   state text not null default 'PENDING'
-    check (state in ('PENDING','DELIVERED','LINK_CLICKED','CREDENTIALS_SUBMITTED','REPORTED','NO_INTERACTION')),
+    check (state in ('PENDING','DELIVERED','LINK_CLICKED','CREDENTIALS_SUBMITTED','LEARNING_VIEWED','REPORTED','NO_INTERACTION')),
   email_delivered_at timestamptz,
   link_clicked_at timestamptz,
   form_submitted_at timestamptz,
+  learning_viewed_at timestamptz,
   vishing_call_id text,
   vishing_outcome text,
   user_agent text,
