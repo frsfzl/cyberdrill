@@ -48,6 +48,12 @@ export interface Campaign {
   };
   created_at: string;
   closed_at?: string;
+  stats?: {
+    sent: number;
+    clicked: number;
+    submitted: number;
+    clickRate: number;
+  };
 }
 
 // ─── Interaction ─────────────────────────────────────────────────────
@@ -56,6 +62,7 @@ export type InteractionState =
   | "DELIVERED"
   | "LINK_CLICKED"
   | "CREDENTIALS_SUBMITTED"
+  | "LEARNING_VIEWED"
   | "REPORTED"
   | "NO_INTERACTION";
 
@@ -103,6 +110,7 @@ export interface Interaction {
   email_delivered_at?: string;
   link_clicked_at?: string;
   form_submitted_at?: string;
+  learning_viewed_at?: string;
   vishing_call_id?: string;
   vishing_outcome?: string;
   call_transcript?: string;

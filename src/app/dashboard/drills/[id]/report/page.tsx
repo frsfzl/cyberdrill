@@ -15,28 +15,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
-import type { Campaign, Interaction } from "@/types";
+import type { Campaign as Drill, Interaction } from "@/types";
 
-type CampaignWithInteractions = Campaign & {
+type DrillWithInteractions = Drill & {
   interactions: (Interaction & {
     employees: { name: string; email: string; department: string };
   })[];
 };
 
-export default function CampaignReportPage() {
+export default function DrillReportPage() {
   const { id } = useParams<{ id: string }>();
-  const [campaign, setCampaign] = useState<CampaignWithInteractions | null>(
+  const [drill, setDrill] = useState<DrillWithInteractions | null>(
     null
   );
 
   useEffect(() => {
-    fetch(`/api/campaigns/${id}`)
+    fetch(`/api/drills/${id}`)
       .then((r) => r.json())
-      .then(setCampaign)
+      .then(setDrill)
       .catch(() => {});
   }, [id]);
 
-  if (!campaign) {
+  if (!drill) {
     return (
       <DashboardShell>
         <div className="flex items-center justify-center py-12">
@@ -46,7 +46,7 @@ export default function CampaignReportPage() {
     );
   }
 
-  const interactions = campaign.interactions || [];
+  const interactions = drill.interactions || [];
   const total = interactions.length;
   const delivered = interactions.filter(
     (i) => i.state !== "PENDING"
@@ -71,9 +71,9 @@ export default function CampaignReportPage() {
   return (
     <DashboardShell>
       <div>
-        <h2 className="text-2xl font-bold">{campaign.name} - Report</h2>
+        <h2 className="text-2xl font-bold">{drill.name} - Report</h2>
         <p className="text-muted-foreground">
-          {campaign.company_name} | {campaign.pretext_scenario}
+          {drill.company_name} | {drill.pretext_scenario}
         </p>
       </div>
 

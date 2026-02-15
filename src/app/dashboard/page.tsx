@@ -1,122 +1,127 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users, Target, BarChart3, Plus } from "lucide-react";
-import type { Campaign, Employee } from "@/types";
+import { Card } from "@/components/ui/card";
+import { AlertTriangle, CheckCircle2, XCircle, Shield, Clock } from "lucide-react";
+
+// Mock data for this week's tests
+const totalSent = 245;
+const totalPassed = 208;
+const totalFailed = 37;
+
+// Mock alerts data
+const mockAlerts = [
+  {
+    id: 1,
+    type: "warning",
+    title: "High Failure Rate Detected",
+    message: "Engineering department has a 45% failure rate in the latest phishing drill",
+    time: "2 hours ago",
+  },
+  {
+    id: 2,
+    type: "success",
+    title: "Drill Completed Successfully",
+    message: "Q1 Security Awareness Training completed with 92% pass rate",
+    time: "5 hours ago",
+  },
+  {
+    id: 3,
+    type: "info",
+    title: "New Employees Added",
+    message: "15 new employees added to the system and assigned to upcoming drills",
+    time: "1 day ago",
+  },
+  {
+    id: 4,
+    type: "critical",
+    title: "Multiple Failed Attempts",
+    message: "User john.doe@company.com has failed 3 consecutive phishing tests",
+    time: "2 days ago",
+  },
+];
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState({
-    employees: 0,
-    campaigns: 0,
-    activeCampaigns: 0,
-  });
-  const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const [empRes, campRes] = await Promise.all([
-          fetch("/api/employees"),
-          fetch("/api/campaigns"),
-        ]);
-        const employees: Employee[] = await empRes.json();
-        const campaigns: Campaign[] = await campRes.json();
-        setStats({
-          employees: employees.length,
-          campaigns: campaigns.length,
-          activeCampaigns: campaigns.filter((c) => c.status === "active")
-            .length,
-        });
-        setRecentCampaigns(campaigns.slice(0, 5));
-      } catch {
-        // API may not be ready yet
-      }
-    }
-    load();
-  }, []);
-
-  const statCards = [
-    {
-      title: "Total Employees",
-      value: stats.employees,
-      icon: Users,
-    },
-    {
-      title: "Total Campaigns",
-      value: stats.campaigns,
-      icon: Target,
-    },
-    {
-      title: "Active Campaigns",
-      value: stats.activeCampaigns,
-      icon: BarChart3,
-    },
-  ];
+  const passedPercentage = (totalPassed / totalSent) * 100;
+  const failedPercentage = (totalFailed / totalSent) * 100;
 
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Dashboard</h2>
-        <Link href="/dashboard/campaigns/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Campaign
-          </Button>
-        </Link>
-      </div>
+      <div className="space-y-8 px-8 py-6">
+        {/* Top Half - Stacked Bar Section */}
+        <div>
+          <h2 className="text-sm font-medium text-neutral-300 uppercase tracking-wider mb-6">Performance</h2>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {statCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Campaigns</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentCampaigns.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No campaigns yet. Create your first campaign to get started.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {recentCampaigns.map((campaign) => (
-                <Link
-                  key={campaign.id}
-                  href={`/dashboard/campaigns/${campaign.id}`}
-                  className="flex items-center justify-between rounded-md border p-3 hover:bg-accent transition-colors"
-                >
-                  <div>
-                    <p className="font-medium">{campaign.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {campaign.pretext_scenario}
-                    </p>
-                  </div>
-                  <span className="text-xs font-medium uppercase rounded-full bg-secondary px-2 py-1">
-                    {campaign.status}
-                  </span>
-                </Link>
-              ))}
+          {/* Single Horizontal Stacked Bar */}
+          <div>
+            <div className="h-16 w-full bg-[#0a0a0f]/40 rounded-xl overflow-hidden border border-white/[0.06] flex">
+              {/* Passed Section */}
+              <div
+                className="bg-blue-600/30 border-r border-blue-500/20 flex items-center justify-center transition-all"
+                style={{ width: `${passedPercentage}%` }}
+              >
+                <span className="text-sm font-medium text-blue-300">
+                  {totalPassed} Passed
+                </span>
+              </div>
+              {/* Failed Section */}
+              <div
+                className="bg-blue-500/20 flex items-center justify-center transition-all"
+                style={{ width: `${failedPercentage}%` }}
+              >
+                <span className="text-sm font-medium text-blue-400">
+                  {totalFailed} Failed
+                </span>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+
+        {/* Bottom Half - Alerts Section */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-medium text-neutral-300 uppercase tracking-wider">Recent Alerts</h2>
+            <span className="text-sm text-neutral-500">Last 7 days</span>
+          </div>
+
+            <div className="space-y-3">
+              {mockAlerts.map((alert) => {
+                const alertIcons = {
+                  warning: AlertTriangle,
+                  success: CheckCircle2,
+                  info: Shield,
+                  critical: XCircle,
+                };
+
+                const Icon = alertIcons[alert.type as keyof typeof alertIcons];
+
+                return (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-4 p-4 rounded-xl border bg-blue-500/10 border-blue-500/20 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-white mb-1">{alert.title}</h3>
+                          <p className="text-sm text-neutral-400 line-clamp-2">{alert.message}</p>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-neutral-500 flex-shrink-0">
+                          <Clock className="h-3 w-3" />
+                          {alert.time}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+        </div>
+      </div>
     </DashboardShell>
   );
 }

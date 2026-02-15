@@ -2,8 +2,24 @@ import { DisclosureBanner } from "@/components/learning/disclosure-banner";
 import { RedFlagChecklist } from "@/components/learning/red-flag-checklist";
 import { ActionGuidance } from "@/components/learning/action-guidance";
 import { Shield } from "lucide-react";
+import { updateInteractionState } from "@/lib/models/interaction";
 
-export default async function LearnPage() {
+export default async function LearnPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+
+  // Track that the employee viewed the learning page
+  try {
+    await updateInteractionState(token, "LEARNING_VIEWED", {
+      learning_viewed_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Failed to track learning page view:", error);
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="flex h-16 items-center gap-2 border-b px-6">
