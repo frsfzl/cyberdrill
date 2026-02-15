@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
 
     setClearingCampaigns(true);
     try {
-      const res = await fetch("/api/campaigns/clear", {
+      const res = await fetch("/api/drills/clear", {
         method: "POST",
       });
 
