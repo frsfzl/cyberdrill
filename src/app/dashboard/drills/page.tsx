@@ -80,25 +80,6 @@ const statusConfig: Record<string, {
   },
 };
 
-// Mock stats for display (until we have real interaction data)
-interface DrillStats {
-  sent: number;
-  clicked: number;
-  replied: number;
-  clickRate: number;
-}
-
-function generateMockStats(drill: Drill): DrillStats {
-  const baseSent = drill.target_employee_ids.length;
-  const clicked = Math.floor(baseSent * (Math.random() * 0.4 + 0.1));
-  const replied = Math.floor(clicked * 0.3);
-  return {
-    sent: baseSent,
-    clicked,
-    replied,
-    clickRate: Math.round((clicked / Math.max(baseSent, 1)) * 100),
-  };
-}
 
 export default function DrillsPage() {
   const [drills, setDrills] = useState<Drill[]>([]);
@@ -109,6 +90,7 @@ export default function DrillsPage() {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [selectedDrills, setSelectedDrills] = useState<Set<string>>(new Set());
+  const [generating, setGenerating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,6 +109,29 @@ export default function DrillsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const generateMockDrill = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/drills/generate-mock", {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Mock drill generated:", data);
+        load();
+      } else {
+        const error = await res.json();
+        console.error("Failed to generate mock drill:", error);
+        alert("Failed to generate mock drill: " + error.error);
+      }
+    } catch (error) {
+      console.error("Error generating mock drill:", error);
+      alert("Error generating mock drill");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const filtered = drills.filter((drill) => {
     const matchesSearch = 
@@ -277,6 +282,25 @@ export default function DrillsPage() {
                 )}
               </div>
 
+              {/* Generate Mock Button (Temporary) */}
+              <Button
+                onClick={generateMockDrill}
+                disabled={generating}
+                className="h-10 px-5 rounded-xl bg-neutral-600 hover:bg-neutral-500 text-white font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Mock Drill
+                  </>
+                )}
+              </Button>
+
               {/* Add New Button */}
               <Link href="/dashboard/drills/new">
                 <Button className="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all hover:scale-105 shadow-lg shadow-blue-500/20">
@@ -299,7 +323,7 @@ export default function DrillsPage() {
               {/* Table Header */}
               <div className="grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 <div>
-                  <Checkbox 
+                  <Checkbox
                     checked={selectedDrills.size === sortedDrills.length && sortedDrills.length > 0}
                     onCheckedChange={toggleSelectAll}
                     className="border-white/[0.15] data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
@@ -310,18 +334,16 @@ export default function DrillsPage() {
                 <div>Progress</div>
                 <div className="text-center">Sent</div>
                 <div className="text-center">Clicked</div>
-                <div className="text-center">Replied</div>
+                <div className="text-center">Submitted</div>
                 <div className="text-right">Actions</div>
               </div>
 
               {/* Table Rows - Card Style with more space */}
               {sortedDrills.map((drill) => {
                 const config = statusConfig[drill.status] || statusConfig.draft;
-                const stats = generateMockStats(drill);
+                const stats = drill.stats || { sent: 0, clicked: 0, submitted: 0, clickRate: 0 };
                 const isSelected = selectedDrills.has(drill.id);
-                const progress = drill.status === "active" ? Math.min(stats.clickRate, 100) : 
-                                drill.status === "closed" ? 100 : 
-                                drill.status === "draft" ? 0 : Math.floor(Math.random() * 60);
+                const progress = stats.clickRate;
 
                 async function handleDelete(e: React.MouseEvent) {
                   e.preventDefault();
@@ -402,9 +424,9 @@ export default function DrillsPage() {
                       <span className="text-sm text-neutral-300">{stats.clicked}</span>
                     </div>
 
-                    {/* Replied */}
+                    {/* Submitted */}
                     <div className="flex items-center justify-center">
-                      <span className="text-sm text-neutral-300">{stats.replied}</span>
+                      <span className="text-sm text-neutral-300">{stats.submitted}</span>
                     </div>
 
                     {/* Actions */}
