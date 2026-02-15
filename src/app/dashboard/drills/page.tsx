@@ -322,15 +322,34 @@ export default function DrillsPage() {
                   </>
                 )}
               </div>
-
-              <Button 
-                onClick={openModal}
-                className="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all hover:scale-105 shadow-lg shadow-blue-500/20"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add New
-              </Button>
             </div>
+
+            <div className="flex items-center gap-2">
+              {/* Temporary: Generate Mock Drill Button */}
+                <Button 
+                  onClick={async () => {
+                    const res = await fetch("/api/drills/mock", { method: "POST" });
+                    if (res.ok) {
+                      const data = await res.json();
+                      console.log("Mock drill created:", data);
+                      load();
+                    }
+                  }}
+                  variant="outline"
+                  className="h-10 px-4 rounded-xl border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Mock Drill
+                </Button>
+
+                <Button 
+                  onClick={openModal}
+                  className="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all hover:scale-105 shadow-lg shadow-blue-500/20"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New
+                </Button>
+              </div>
           </div>
         </div>
 
