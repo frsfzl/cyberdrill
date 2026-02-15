@@ -291,14 +291,14 @@ export default function EmployeesPage() {
               {/* Add Employee Button with Dropdown */}
               <div className="flex">
                 <Button 
-                  className="h-10 px-4 rounded-l-xl rounded-r-none bg-white hover:bg-neutral-200 text-black font-medium transition-all"
+                  className="h-10 px-4 rounded-l-xl rounded-r-none bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all shadow-lg shadow-blue-500/20"
                   onClick={() => setIsAddDialogOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Employee
                 </Button>
                 <Button 
-                  className="h-10 px-2 rounded-l-none rounded-r-xl bg-white hover:bg-neutral-200 text-black font-medium transition-all border-l border-black/10"
+                  className="h-10 px-2 rounded-l-none rounded-r-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all border-l border-blue-500/30 shadow-lg shadow-blue-500/20"
                   onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
                 >
                   <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isAddMenuOpen ? "rotate-180" : ""}`} />

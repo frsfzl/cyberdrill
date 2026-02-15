@@ -91,6 +91,8 @@ export default function DrillsPage() {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [selectedDrills, setSelectedDrills] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -109,6 +111,21 @@ export default function DrillsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Track scroll for floating effect
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    const handleScroll = () => {
+      setIsScrolled(main.scrollTop > 60);
+    };
+    
+    main.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    
+    return () => main.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const generateMockDrill = async () => {
     setGenerating(true);
@@ -179,15 +196,27 @@ export default function DrillsPage() {
   return (
     <DashboardShell>
       <div className="relative">
-        {/* Static Header - No floating effect */}
-        <div className="px-8 pt-6 pb-3">
+        {/* Floating Header Bar */}
+        <div 
+          ref={headerRef}
+          className={`transition-all duration-500 ease-out z-30 ${
+            isScrolled 
+              ? "fixed top-4 left-[232px] right-6 px-6 py-3 bg-[#111118]/95 backdrop-blur-xl rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/50"
+              : "px-8 py-6 bg-transparent"
+          }`}
+          style={{ width: isScrolled ? "calc(100% - 280px)" : "auto" }}
+        >
           <div className="flex items-center justify-between gap-4">
             {/* Left: Search */}
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+            <div className={`relative transition-all duration-300 ${isScrolled ? "w-56" : "w-64"}`}>
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isScrolled ? "text-neutral-400" : "text-neutral-500"}`} />
               <Input
                 placeholder="Search..."
-                className="pl-10 bg-[#111118]/60 border-white/[0.06] rounded-xl h-10 text-sm placeholder:text-neutral-500 focus:border-blue-500/50 disabled:opacity-50"
+                className={`pl-10 rounded-xl h-10 text-sm placeholder:text-neutral-500 focus:border-blue-500/50 disabled:opacity-50 transition-all ${
+                  isScrolled 
+                    ? "bg-[#0a0a0f] border-white/[0.08]" 
+                    : "bg-[#111118]/60 border-white/[0.06]"
+                }`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -202,9 +231,9 @@ export default function DrillsPage() {
                   variant="outline"
                   onClick={() => { setIsStatusOpen(!isStatusOpen); setIsSortOpen(false); }}
                   disabled={loading}
-                  className={`h-10 px-4 rounded-xl border-white/[0.06] bg-[#111118]/60 hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2 ${
-                    activeFiltersCount > 0 ? "border-blue-500/30 bg-blue-500/5" : ""
-                  }`}
+                  className={`h-10 px-4 rounded-xl border-white/[0.06] hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2 ${
+                    isScrolled ? "bg-[#0a0a0f] border-white/[0.08]" : "bg-[#111118]/60"
+                  } ${activeFiltersCount > 0 ? "border-blue-500/30 bg-blue-500/5" : ""}`}
                 >
                   <Zap className="h-4 w-4 text-neutral-400" />
                   <span className="text-sm text-neutral-300">
@@ -247,7 +276,9 @@ export default function DrillsPage() {
                   variant="outline"
                   onClick={() => { setIsSortOpen(!isSortOpen); setIsStatusOpen(false); }}
                   disabled={loading}
-                  className="h-10 px-4 rounded-xl border-white/[0.06] bg-[#111118]/60 hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2"
+                  className={`h-10 px-4 rounded-xl border-white/[0.06] hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2 ${
+                    isScrolled ? "bg-[#0a0a0f] border-white/[0.08]" : "bg-[#111118]/60"
+                  }`}
                 >
                   <ArrowUpDown className="h-4 w-4 text-neutral-400" />
                   <span className="text-sm text-neutral-300">
@@ -312,8 +343,11 @@ export default function DrillsPage() {
           </div>
         </div>
 
-        {/* Drills Table - Reduced spacing */}
-        <div className="px-8 pt-1 pb-8">
+        {/* Spacer when floating */}
+        <div className={`transition-all duration-500 ${isScrolled ? "h-20" : "h-0"}`} />
+
+        {/* Drills Table */}
+        <div className="px-8 pt-2 pb-8">
           {loading ? (
             <LoadingTable />
           ) : sortedDrills.length === 0 ? (
