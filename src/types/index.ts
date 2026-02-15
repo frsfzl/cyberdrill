@@ -48,6 +48,12 @@ export interface Campaign {
   };
   created_at: string;
   closed_at?: string;
+  stats?: {
+    sent: number;
+    clicked: number;
+    submitted: number;
+    clickRate: number;
+  };
 }
 
 // ─── Interaction ─────────────────────────────────────────────────────

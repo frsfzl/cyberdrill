@@ -59,7 +59,7 @@ export default function CampaignMonitorPage() {
   const [processingAnalytics, setProcessingAnalytics] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/campaigns/${id}`);
+    const res = await fetch(`/api/drills/${id}`);
     if (res.ok) setCampaign(await res.json());
   }, [id]);
 
@@ -97,14 +97,14 @@ export default function CampaignMonitorPage() {
 
   async function handleLaunch() {
     setLaunching(true);
-    await fetch(`/api/campaigns/${id}/launch`, { method: "POST" });
+    await fetch(`/api/drills/${id}/launch`, { method: "POST" });
     await load();
     setLaunching(false);
   }
 
   async function handleClose() {
     setClosing(true);
-    await fetch(`/api/campaigns/${id}/close`, { method: "POST" });
+    await fetch(`/api/drills/${id}/close`, { method: "POST" });
     await load();
     setClosing(false);
   }

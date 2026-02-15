@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
 
     setClearingCampaigns(true);
     try {
-      const res = await fetch("/api/campaigns/clear", {
+      const res = await fetch("/api/drills/clear", {
         method: "POST",
       });
 
@@ -279,22 +279,20 @@ export default function AnalyticsPage() {
               Export
             </Button>
           </div>
-          <div className="flex gap-2">
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="365">Last year</option>
-            </select>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
-          </div>
+        </div>
+
+        {/* Date Range Controls */}
+        <div className="flex justify-end">
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+          </select>
         </div>
 
         {/* Key Metrics */}

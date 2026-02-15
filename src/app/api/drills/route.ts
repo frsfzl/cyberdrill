@@ -1,10 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCampaigns, createCampaign } from "@/lib/models/campaign";
+import { supabase } from "@/lib/db";
 
 export async function GET() {
   try {
     const campaigns = await getCampaigns();
-    return NextResponse.json(campaigns);
+
+    // Fetch interaction stats for each campaign
+    const campaignsWithStats = await Promise.all(
+      campaigns.map(async (campaign) => {
+        const { data: interactions, error } = await supabase
+          .from("interactions")
+          .select("state")
+          .eq("campaign_id", campaign.id);
+
+        if (error) {
+          console.error("Error fetching interactions:", error);
+          return {
+            ...campaign,
+            stats: { sent: 0, clicked: 0, submitted: 0, clickRate: 0 }
+          };
+        }
+
+        const sent = interactions?.length || 0;
+        const clicked = interactions?.filter(i =>
+          i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED"
+        ).length || 0;
+        const submitted = interactions?.filter(i =>
+          i.state === "CREDENTIALS_SUBMITTED"
+        ).length || 0;
+        const clickRate = sent > 0 ? Math.round((clicked / sent) * 100) : 0;
+        const progress = 100 - clickRate; // Inverted: percentage who didn't click
+
+        return {
+          ...campaign,
+          stats: { sent, clicked, submitted, clickRate: progress }
+        };
+      })
+    );
+
+    return NextResponse.json(campaignsWithStats);
   } catch (error) {
     return NextResponse.json(
       { error: (error as Error).message },
