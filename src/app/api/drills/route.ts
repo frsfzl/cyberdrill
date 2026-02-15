@@ -24,10 +24,10 @@ export async function GET() {
 
         const sent = interactions?.length || 0;
         const clicked = interactions?.filter(i =>
-          i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED"
+          i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
         ).length || 0;
         const submitted = interactions?.filter(i =>
-          i.state === "CREDENTIALS_SUBMITTED"
+          i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
         ).length || 0;
         const clickRate = sent > 0 ? Math.round((clicked / sent) * 100) : 0;
         const progress = 100 - clickRate; // Inverted: percentage who didn't click
@@ -41,6 +41,7 @@ export async function GET() {
 
     return NextResponse.json(campaignsWithStats);
   } catch (error) {
+    console.error("[API /drills] Error creating campaign:", error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }

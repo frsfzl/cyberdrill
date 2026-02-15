@@ -68,7 +68,7 @@ export default function DrillsPage() {
   // New Drill Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState(1);
-  const [drillType, setDrillType] = useState<"email" | "call" | null>(null);
+  const [drillType, setDrillType] = useState<"email" | "vapi" | null>(null);
   const [drillForm, setDrillForm] = useState({
     name: "",
     loginUrl: "",
@@ -169,12 +169,14 @@ export default function DrillsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: drillForm.name,
-          login_page_url: drillForm.loginUrl,
+          login_page_url: drillType === "email" ? drillForm.loginUrl : "",
           pretext_scenario: SCENARIOS.find(s => s.id === selectedScenario)?.desc || "",
           target_employee_ids: selectedTargets,
           delivery_method: drillType,
           delivery_window: { start: "", end: "" },
           status: "draft",
+          company_name: "",
+          industry: "",
         }),
       });
 
@@ -182,7 +184,8 @@ export default function DrillsPage() {
         closeModal();
         load(); // Refresh drills list
       } else {
-        console.error("Failed to create drill");
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Failed to create drill:", errorData);
         setIsCreating(false);
       }
     } catch (error) {
@@ -381,9 +384,6 @@ export default function DrillsPage() {
                     </div>
 
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                        <Target className="h-4 w-4 text-blue-400" />
-                      </div>
                       <div className="min-w-0">
                         <p className="font-medium text-white truncate group-hover:text-blue-300 transition-colors">{drill.name}</p>
                         <p className="text-xs text-neutral-500 truncate">{drill.pretext_scenario?.slice(0, 40) || "No scenario"}</p>
@@ -510,7 +510,8 @@ export default function DrillsPage() {
                         </div>
                         <h4 className="text-lg font-medium text-white mb-2">Email</h4>
                         <p className="text-center text-neutral-500 text-sm">Phishing emails with malicious links</p>
-                        {drillType === "email" && (
+                        {/* Login URL - Only for Email */}
+                    {drillType === "email" && (
                           <div className="mt-4 flex items-center gap-1.5 text-blue-400 text-xs">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             <span>Selected</span>
@@ -521,22 +522,22 @@ export default function DrillsPage() {
 
                     {/* Call Option */}
                     <button
-                      onClick={() => setDrillType("call")}
+                      onClick={() => setDrillType("vapi")}
                       className={`group w-[280px] h-[220px] rounded-2xl border transition-all duration-300 ${
-                        drillType === "call"
+                        drillType === "vapi"
                           ? "bg-violet-500/5 border-violet-500/40"
                           : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]"
                       }`}
                     >
                       <div className="h-full flex flex-col items-center justify-center p-6">
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-all ${
-                          drillType === "call" ? "bg-violet-500/20" : "bg-white/[0.05]"
+                          drillType === "vapi" ? "bg-violet-500/20" : "bg-white/[0.05]"
                         }`}>
-                          <Phone className={`h-7 w-7 ${drillType === "call" ? "text-violet-400" : "text-neutral-400"}`} />
+                          <Phone className={`h-7 w-7 ${drillType === "vapi" ? "text-violet-400" : "text-neutral-400"}`} />
                         </div>
                         <h4 className="text-lg font-medium text-white mb-2">Call</h4>
                         <p className="text-center text-neutral-500 text-sm">AI-powered voice phishing calls</p>
-                        {drillType === "call" && (
+                        {drillType === "vapi" && (
                           <div className="mt-4 flex items-center gap-1.5 text-violet-400 text-xs">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             <span>Selected</span>
@@ -563,21 +564,25 @@ export default function DrillsPage() {
                     />
                   </div>
 
-                  {/* Login URL */}
-                  <div className="mb-4">
-                    <label className="text-xs text-neutral-500 uppercase tracking-wider mb-1.5 block">Login Page to Clone *</label>
-                    <input
-                      type="text"
-                      value={drillForm.loginUrl}
-                      onChange={(e) => setDrillForm({...drillForm, loginUrl: e.target.value})}
-                      placeholder="https://login.company.com"
-                      className="w-full h-10 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50 transition-colors"
-                    />
-                  </div>
+                  {/* Login URL - Only for Email */}
+                  {drillType === "email" && (
+                    <div className="mb-4">
+                      <label className="text-xs text-neutral-500 uppercase tracking-wider mb-1.5 block">Login Page to Clone *</label>
+                      <input
+                        type="text"
+                        value={drillForm.loginUrl}
+                        onChange={(e) => setDrillForm({...drillForm, loginUrl: e.target.value})}
+                        placeholder="https://login.company.com"
+                        className="w-full h-10 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50 transition-colors"
+                      />
+                    </div>
+                  )}
 
                   {/* Scenarios */}
                   <div className="relative">
-                    <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Select Scenario *</label>
+                    <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">
+                      Select Scenario *
+                    </label>
                     <div className="grid grid-cols-3 gap-2">
                       {SCENARIOS.map((scenario) => (
                         <div key={scenario.id} className="relative">
@@ -698,11 +703,21 @@ export default function DrillsPage() {
                       <span className="text-sm text-white font-medium">{drillForm.name}</span>
                     </div>
 
-                    {/* Login URL */}
+                    {/* Drill Type */}
                     <div className="flex items-center justify-between py-3 border-b border-white/[0.06]">
-                      <span className="text-sm text-neutral-500">Login Page</span>
-                      <span className="text-sm text-white font-medium truncate max-w-[300px]">{drillForm.loginUrl}</span>
+                      <span className="text-sm text-neutral-500">Type</span>
+                      <span className="text-sm text-white font-medium capitalize">
+                        {drillType === "vapi" ? "Call" : drillType}
+                      </span>
                     </div>
+
+                    {/* Login URL - Only show for email */}
+                    {drillType === "email" && (
+                      <div className="flex items-center justify-between py-3 border-b border-white/[0.06]">
+                        <span className="text-sm text-neutral-500">Login Page</span>
+                        <span className="text-sm text-white font-medium truncate max-w-[300px]">{drillForm.loginUrl}</span>
+                      </div>
+                    )}
 
                     {/* Scenario */}
                     <div className="flex items-center justify-between py-3 border-b border-white/[0.06]">
@@ -723,8 +738,9 @@ export default function DrillsPage() {
                   <div className="mt-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
                     <p className="text-xs text-neutral-400 leading-relaxed">
                       This drill will be created in <span className="text-blue-400">DRAFT</span> status. 
-                      Page capture and content generation will begin automatically. 
-                      You can launch when ready.
+                      {drillType === "email" 
+                        ? "Page capture and content generation will begin automatically. You can launch when ready."
+                        : "Vishing script generation will begin automatically. You can launch when ready."}
                     </p>
                   </div>
                 </div>
@@ -745,7 +761,7 @@ export default function DrillsPage() {
                 onClick={modalStep === 4 ? handleCreateDrill : nextStep}
                 disabled={
                   (modalStep === 1 && !drillType) || 
-                  (modalStep === 2 && (!drillForm.name.trim() || !drillForm.loginUrl.trim() || !selectedScenario)) ||
+                  (modalStep === 2 && (!drillForm.name.trim() || (drillType === "email" && !drillForm.loginUrl.trim()) || !selectedScenario)) ||
                   (modalStep === 3 && selectedTargets.length === 0) ||
                   (modalStep === 4 && isCreating)
                 }
