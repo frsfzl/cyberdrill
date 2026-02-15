@@ -269,14 +269,14 @@ export default function CampaignMonitorPage() {
                           {stateInfo.label}
                         </Badge>
                       </TableCell>
-                      <TableCell suppressHydrationWarning>
+                      <TableCell>
                         {interaction.link_clicked_at
                           ? new Date(
                               interaction.link_clicked_at
                             ).toLocaleTimeString()
                           : "-"}
                       </TableCell>
-                      <TableCell suppressHydrationWarning>
+                      <TableCell>
                         {interaction.form_submitted_at
                           ? new Date(
                               interaction.form_submitted_at

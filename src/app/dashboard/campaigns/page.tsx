@@ -222,9 +222,7 @@ export default function CampaignsPage() {
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        <span suppressHydrationWarning>
-                          {new Date(campaign.created_at).toLocaleDateString()}
-                        </span>
+                        <span>{new Date(campaign.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
