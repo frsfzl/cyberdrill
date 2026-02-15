@@ -8,7 +8,6 @@ import {
   Users,
   Target,
   BarChart3,
-  AlertTriangle,
   Settings,
   LogOut,
   ChevronUp,
@@ -21,7 +20,6 @@ const navItems = [
   { href: "/dashboard/drills", label: "Drills", icon: Target },
   { href: "/dashboard/employees", label: "Employees", icon: Users },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/dashboard/alerts", label: "Alerts", icon: AlertTriangle },
 ];
 
 export function Sidebar() {
