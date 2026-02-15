@@ -96,14 +96,25 @@ export default function DrillDetailPage() {
 
   const interactions = campaign.interactions || [];
   const total = interactions.length;
-  const clicked = interactions.filter((i) =>
-    i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
-  ).length;
-  const submitted = interactions.filter((i) => 
-    i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
-  ).length;
+  const isEmail = !campaign.delivery_method || campaign.delivery_method === "email" || campaign.delivery_method === "both";
+  
+  // For emails: clicked = link clicked or beyond
+  // For calls: clicked = call was made (vishing_outcome exists)
+  const clicked = isEmail
+    ? interactions.filter((i) =>
+        i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
+      ).length
+    : interactions.filter((i) => i.vishing_outcome).length;
+  
+  // Failed = submitted (email) or fell for phish (call)
+  const failed = isEmail
+    ? interactions.filter((i) =>
+        i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
+      ).length
+    : interactions.filter((i) => i.vishing_outcome === "failed").length;
+  
   const clickRate = total > 0 ? Math.round((clicked / total) * 100) : 0;
-  const submitRate = total > 0 ? Math.round((submitted / total) * 100) : 0;
+  const failRate = total > 0 ? Math.round((failed / total) * 100) : 0;
 
   const status = statusConfig[campaign.status] || statusConfig.draft;
 
@@ -181,7 +192,9 @@ export default function DrillDetailPage() {
         {/* Stats Row */}
         <div className="grid grid-cols-2 gap-8 mb-10">
           <div>
-            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">Click Rate</p>
+            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">
+              {isEmail ? "Click Rate" : "Response Rate"}
+            </p>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-semibold text-white">{clickRate}%</span>
               <span className="text-sm text-neutral-400">{clicked} of {total}</span>
@@ -194,15 +207,15 @@ export default function DrillDetailPage() {
             </div>
           </div>
           <div>
-            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">Submit Rate</p>
+            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">Fail Rate</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-semibold text-white">{submitRate}%</span>
-              <span className="text-sm text-neutral-400">{submitted} of {total}</span>
+              <span className="text-3xl font-semibold text-white">{failRate}%</span>
+              <span className="text-sm text-neutral-400">{failed} of {total}</span>
             </div>
             <div className="h-1.5 bg-white/10 rounded-full mt-3">
               <div 
                 className="h-full bg-red-500 rounded-full transition-all"
-                style={{ width: `${submitRate}%` }}
+                style={{ width: `${failRate}%` }}
               />
             </div>
           </div>
@@ -219,40 +232,43 @@ export default function DrillDetailPage() {
                   <th className="text-left text-xs font-medium text-neutral-400 uppercase px-4 py-3">Email</th>
                   <th className="text-left text-xs font-medium text-neutral-400 uppercase px-4 py-3">Department</th>
                   <th className="text-left text-xs font-medium text-neutral-400 uppercase px-4 py-3">Status</th>
-                  <th className="text-left text-xs font-medium text-neutral-400 uppercase px-4 py-3">Clicked</th>
-                  <th className="text-left text-xs font-medium text-neutral-400 uppercase px-4 py-3">Submitted</th>
+                  <th className="text-left text-xs font-medium text-neutral-400 uppercase px-4 py-3">Failed</th>
                 </tr>
               </thead>
               <tbody>
                 {interactions.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-neutral-500">
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-500">
                       No interactions yet
                     </td>
                   </tr>
                 ) : (
-                  interactions.map((interaction) => (
-                    <tr key={interaction.id} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
-                      <td className="px-4 py-3 text-sm text-white">{interaction.employees?.name}</td>
-                      <td className="px-4 py-3 text-sm text-neutral-300">{interaction.employees?.email}</td>
-                      <td className="px-4 py-3 text-sm text-neutral-300">{interaction.employees?.department}</td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-neutral-300">
-                          {stateLabels[interaction.state] || "Pending"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-neutral-400">
-                        {interaction.link_clicked_at
-                          ? new Date(interaction.link_clicked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-neutral-400">
-                        {interaction.learning_viewed_at
-                          ? new Date(interaction.learning_viewed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))
+                  interactions.map((interaction) => {
+                    // Determine if failed
+                    const didFail = isEmail
+                      ? (interaction.state === "CREDENTIALS_SUBMITTED" || interaction.state === "LEARNING_VIEWED")
+                      : interaction.vishing_outcome === "failed";
+                    
+                    return (
+                      <tr key={interaction.id} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
+                        <td className="px-4 py-3 text-sm text-white">{interaction.employees?.name}</td>
+                        <td className="px-4 py-3 text-sm text-neutral-300">{interaction.employees?.email}</td>
+                        <td className="px-4 py-3 text-sm text-neutral-300">{interaction.employees?.department}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-neutral-300">
+                            {stateLabels[interaction.state] || "Pending"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {didFail ? (
+                            <span className="text-red-400">Yes</span>
+                          ) : (
+                            <span className="text-neutral-600">No</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

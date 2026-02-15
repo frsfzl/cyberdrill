@@ -11,30 +11,40 @@ export async function GET() {
       campaigns.map(async (campaign) => {
         const { data: interactions, error } = await supabase
           .from("interactions")
-          .select("state")
+          .select("state, vishing_outcome")
           .eq("campaign_id", campaign.id);
 
         if (error) {
           console.error("Error fetching interactions:", error);
           return {
             ...campaign,
-            stats: { sent: 0, clicked: 0, submitted: 0, clickRate: 0 }
+            stats: { sent: 0, clicked: 0, failed: 0, clickRate: 0 }
           };
         }
 
         const sent = interactions?.length || 0;
-        const clicked = interactions?.filter(i =>
-          i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
-        ).length || 0;
-        const submitted = interactions?.filter(i =>
-          i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
-        ).length || 0;
+        // For emails: clicked = any interaction beyond delivered
+        // For calls: clicked = any call with outcome (vishing_outcome exists)
+        const isEmail = !campaign.delivery_method || campaign.delivery_method === "email" || campaign.delivery_method === "both";
+        
+        const clicked = isEmail 
+          ? interactions?.filter(i =>
+              i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
+            ).length || 0
+          : interactions?.filter(i => i.vishing_outcome).length || 0;
+        
+        // Failed = submitted credentials (email) or fell for phish (call)
+        const failed = isEmail
+          ? interactions?.filter(i =>
+              i.state === "CREDENTIALS_SUBMITTED" || i.state === "LEARNING_VIEWED"
+            ).length || 0
+          : interactions?.filter(i => i.vishing_outcome === "failed").length || 0;
+        
         const clickRate = sent > 0 ? Math.round((clicked / sent) * 100) : 0;
-        const progress = 100 - clickRate; // Inverted: percentage who didn't click
 
         return {
           ...campaign,
-          stats: { sent, clicked, submitted, clickRate: progress }
+          stats: { sent, clicked, failed, clickRate }
         };
       })
     );

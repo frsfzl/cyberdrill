@@ -345,19 +345,13 @@ export default function DrillsPage() {
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                <div>
-                  <Checkbox 
-                    checked={selectedDrills.size === sortedDrills.length && sortedDrills.length > 0}
-                    onCheckedChange={toggleSelectAll}
-                    className="border-white/[0.15] data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                  />
-                </div>
+                <div>Type</div>
                 <div>Name</div>
                 <div>Status</div>
-                <div>Progress</div>
+                <div className="text-center">Success Rate</div>
                 <div className="text-center">Sent</div>
                 <div className="text-center">Clicked</div>
-                <div className="text-center">Replied</div>
+                <div className="text-center">Failed</div>
                 <div className="text-right">Actions</div>
               </div>
 
@@ -365,7 +359,12 @@ export default function DrillsPage() {
                 const config = statusConfig[drill.status] || statusConfig.draft;
                 const stats = generateMockStats(drill);
                 const isSelected = selectedDrills.has(drill.id);
-                const progress = drill.status === "active" ? Math.min(stats.clickRate, 100) : drill.status === "closed" ? 100 : drill.status === "draft" ? 0 : Math.floor(Math.random() * 60);
+                // For emails: success = inverse of click rate (didn't click)
+                // For calls: success = didn't fail
+                const clickRate = stats.sent > 0 ? Math.round((stats.clicked / stats.sent) * 100) : 0;
+                const successRate = drill.delivery_method === "vapi" 
+                  ? (stats.sent > 0 ? Math.round(((stats.sent - stats.failed) / stats.sent) * 100) : 0)
+                  : (100 - clickRate);
 
                 return (
                   <Link
@@ -375,12 +374,12 @@ export default function DrillsPage() {
                       isSelected ? "bg-blue-500/5 border-blue-500/30" : "bg-[#111118]/40 border-white/[0.06] hover:border-white/[0.12] hover:bg-[#111118]/60"
                     }`}
                   >
-                    <div className="flex items-center" onClick={(e) => e.preventDefault()}>
-                      <Checkbox 
-                        checked={isSelected}
-                        onCheckedChange={() => toggleSelect(drill.id)}
-                        className="border-white/[0.15] data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                      />
+                    <div className="flex items-center">
+                      {drill.delivery_method === "vapi" ? (
+                        <Phone className="h-4 w-4 text-violet-400" />
+                      ) : (
+                        <Mail className="h-4 w-4 text-blue-400" />
+                      )}
                     </div>
 
                     <div className="flex items-center gap-3 min-w-0">
@@ -398,15 +397,21 @@ export default function DrillsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-white font-medium w-8">{progress}%</span>
+                      <span className="text-sm text-white font-medium w-8">{successRate}%</span>
                       <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-500 ${progress > 50 ? "bg-green-500" : progress > 20 ? "bg-blue-500" : "bg-neutral-500"}`} style={{ width: `${progress}%` }} />
+                        <div className={`h-full rounded-full transition-all duration-500 ${successRate > 50 ? "bg-green-500" : successRate > 20 ? "bg-blue-500" : "bg-neutral-500"}`} style={{ width: `${successRate}%` }} />
                       </div>
                     </div>
 
                     <div className="flex items-center justify-center"><span className="text-sm text-neutral-300">{stats.sent}</span></div>
-                    <div className="flex items-center justify-center"><span className="text-sm text-neutral-300">{stats.clicked}</span></div>
-                    <div className="flex items-center justify-center"><span className="text-sm text-neutral-300">{stats.replied}</span></div>
+                    <div className="flex items-center justify-center">
+                      <span className="text-sm text-neutral-300">
+                        {drill.delivery_method === "vapi" ? "—" : stats.clicked}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <span className="text-sm text-neutral-300">{stats.failed}</span>
+                    </div>
 
                     <div className="flex items-center justify-end gap-1">
                       {drill.status === "ready" && (
@@ -779,8 +784,10 @@ export default function DrillsPage() {
 
 function generateMockStats(drill: Drill) {
   const baseSent = drill.target_employee_ids?.length || 0;
+  // For display purposes only - actual stats come from API
   const clicked = Math.floor(baseSent * 0.3);
-  return { sent: baseSent, clicked, replied: Math.floor(clicked * 0.4), clickRate: baseSent > 0 ? Math.round((clicked / baseSent) * 100) : 0 };
+  const submitted = Math.floor(clicked * 0.4);
+  return { sent: baseSent, clicked, submitted, failed: submitted, clickRate: baseSent > 0 ? Math.round((clicked / baseSent) * 100) : 0 };
 }
 
 function LoadingTable() {
@@ -790,7 +797,6 @@ function LoadingTable() {
         <div key={i} className="grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-5 rounded-xl bg-[#111118]/40 border border-white/[0.06]">
           <div className="flex items-center"><div className="h-4 w-4 bg-white/[0.05] rounded animate-pulse" /></div>
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 bg-white/[0.05] rounded-lg animate-pulse" />
             <div className="space-y-2"><div className="h-4 w-32 bg-white/[0.05] rounded animate-pulse" /><div className="h-3 w-24 bg-white/[0.05] rounded animate-pulse" /></div>
           </div>
           <div className="flex items-center"><div className="h-6 w-20 bg-white/[0.05] rounded animate-pulse" /></div>
