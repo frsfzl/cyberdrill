@@ -16,7 +16,9 @@ import {
   Mail,
   Phone,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Trash2,
+  Loader2
 } from "lucide-react";
 import type { Campaign } from "@/types";
 
@@ -34,13 +36,42 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [clearingData, setClearingData] = useState(false);
 
   useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  function fetchCampaigns() {
     fetch("/api/campaigns")
       .then((r) => r.json())
       .then(setCampaigns)
       .catch(() => {});
-  }, []);
+  }
+
+  async function handleClearAll() {
+    if (!confirm("Are you sure you want to clear ALL campaigns and data? This cannot be undone!")) {
+      return;
+    }
+
+    setClearingData(true);
+    try {
+      const res = await fetch("/api/campaigns/clear", {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        setCampaigns([]);
+      } else {
+        alert("Failed to clear campaigns");
+      }
+    } catch (error) {
+      console.error("Failed to clear campaigns:", error);
+      alert("Failed to clear campaigns");
+    } finally {
+      setClearingData(false);
+    }
+  }
 
   const filteredCampaigns = campaigns.filter((campaign) => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -67,12 +98,32 @@ export default function CampaignsPage() {
               Manage and monitor your phishing simulation campaigns
             </p>
           </div>
-          <Link href="/dashboard/campaigns/new">
-            <Button size="lg" className="gap-2 shadow-lg shadow-primary/20">
-              <Plus className="h-4 w-4" />
-              New Campaign
+          <div className="flex items-center gap-3">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearAll}
+              disabled={clearingData}
+            >
+              {clearingData ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Clearing...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All Data
+                </>
+              )}
             </Button>
-          </Link>
+            <Link href="/dashboard/campaigns/new">
+              <Button size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                <Plus className="h-4 w-4" />
+                New Campaign
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Quick Stats */}

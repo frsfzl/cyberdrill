@@ -22,12 +22,15 @@ import {
   Square,
   BarChart3,
   ExternalLink,
+  Phone,
+  RefreshCw,
 } from "lucide-react";
-import type { Campaign, Interaction } from "@/types";
+import { CallAnalyticsCard } from "@/components/call-analytics-card";
+import type { Campaign, Interaction, Employee } from "@/types";
 
 type CampaignWithInteractions = Campaign & {
   interactions: (Interaction & {
-    employees: { name: string; email: string; department: string };
+    employees: { name: string; email: string; department: string; position: string };
   })[];
 };
 
@@ -53,18 +56,44 @@ export default function CampaignMonitorPage() {
   );
   const [launching, setLaunching] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [processingAnalytics, setProcessingAnalytics] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/campaigns/${id}`);
     if (res.ok) setCampaign(await res.json());
   }, [id]);
 
+  const processCallAnalytics = useCallback(async (manual = false) => {
+    if (manual) setProcessingAnalytics(true);
+    try {
+      const res = await fetch('/api/calls/process-analytics', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.processed > 0 || manual) {
+          console.log(`Processed ${data.processed} call analytics, sent ${data.emailsSent} emails`);
+          // Reload campaign to show updated analytics
+          await load();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to process call analytics:', error);
+    } finally {
+      if (manual) setProcessingAnalytics(false);
+    }
+  }, [load]);
+
   useEffect(() => {
     load();
-    // Poll every 5 seconds when campaign is active
-    const interval = setInterval(load, 5000);
+    processCallAnalytics(); // Check for completed calls on mount
+
+    // Poll every 10 seconds for campaign updates and call analytics
+    const interval = setInterval(() => {
+      load();
+      processCallAnalytics();
+    }, 10000);
+
     return () => clearInterval(interval);
-  }, [load]);
+  }, [load, processCallAnalytics]);
 
   async function handleLaunch() {
     setLaunching(true);
@@ -100,6 +129,9 @@ export default function CampaignMonitorPage() {
     (i) => i.state === "CREDENTIALS_SUBMITTED"
   ).length;
 
+  // Filter interactions with call analytics
+  const callAnalytics = interactions.filter(i => i.call_analytics && i.vishing_call_id);
+
   return (
     <DashboardShell>
       <div className="flex items-center justify-between">
@@ -108,6 +140,19 @@ export default function CampaignMonitorPage() {
           <p className="text-muted-foreground">{campaign.pretext_scenario}</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => processCallAnalytics(true)}
+            disabled={processingAnalytics}
+          >
+            {processingAnalytics ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Check for Results
+          </Button>
           {campaign.status === "draft" && (
             <Button onClick={handleLaunch} disabled={launching}>
               {launching ? (
@@ -291,6 +336,52 @@ export default function CampaignMonitorPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Call Analytics Section */}
+      {callAnalytics.length > 0 && (
+        <Card className="border-primary/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Phone className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Voice Call Analytics</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    AI-powered analysis of vishing simulation results
+                  </p>
+                </div>
+              </div>
+              <Badge variant="secondary">
+                {callAnalytics.length} {callAnalytics.length === 1 ? 'call' : 'calls'} analyzed
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            {callAnalytics.map((interaction) => (
+              <div key={interaction.id} className="space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b">
+                  <div>
+                    <h4 className="font-semibold text-lg">{interaction.employees?.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {interaction.employees?.department} • {interaction.employees?.position} • {interaction.employees?.email}
+                    </p>
+                  </div>
+                  <div className="text-right text-sm text-muted-foreground">
+                    {interaction.updated_at && new Date(interaction.updated_at).toLocaleString()}
+                  </div>
+                </div>
+                <CallAnalyticsCard
+                  analytics={interaction.call_analytics!}
+                  callDuration={interaction.call_duration}
+                  recordingUrl={interaction.call_recording_url}
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </DashboardShell>
   );
 }

@@ -4,7 +4,7 @@ import { supabase } from "@/lib/db";
 export async function GET() {
   try {
     // Get all interactions with employee and campaign data
-    const { data: interactions, error: intError } = await supabase
+    const { data: allInteractions, error: intError } = await supabase
       .from("interactions")
       .select("*, employees(name, email, department, position), campaigns(name, status)");
     if (intError) throw intError;
@@ -19,35 +19,50 @@ export async function GET() {
       .select("*");
     if (empError) throw empError;
 
+    // Filter to only completed interactions (emails clicked/submitted/reported OR calls with analytics)
+    const interactions = allInteractions.filter(i => {
+      // Call interactions with analytics (completed calls)
+      if (i.vishing_call_id && i.call_analytics) {
+        return true;
+      }
+      // Email interactions that were acted upon (no vishing_call_id means it's an email)
+      if (!i.vishing_call_id && (i.link_clicked_at || i.form_submitted_at || i.state === 'REPORTED')) {
+        return true;
+      }
+      return false;
+    });
+
     // Overall stats
     const totalInteractions = interactions.length;
     const clicked = interactions.filter(
       (i) =>
-        i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED"
+        i.clicked_at || i.state === "LINK_CLICKED" || i.state === "CREDENTIALS_SUBMITTED"
     ).length;
     const submitted = interactions.filter(
-      (i) => i.state === "CREDENTIALS_SUBMITTED"
+      (i) => i.submitted_at || i.state === "CREDENTIALS_SUBMITTED"
     ).length;
     const reported = interactions.filter(
-      (i) => i.state === "REPORTED"
+      (i) => i.reported_at || i.state === "REPORTED"
     ).length;
 
     // Department breakdown
     const deptMap = new Map<
       string,
-      { total: number; clicked: number; submitted: number }
+      { total: number; clicked: number; submitted: number; reported: number }
     >();
     for (const i of interactions) {
       const dept =
         (i.employees as { department: string })?.department || "Unknown";
-      const entry = deptMap.get(dept) || { total: 0, clicked: 0, submitted: 0 };
+      const entry = deptMap.get(dept) || { total: 0, clicked: 0, submitted: 0, reported: 0 };
       entry.total++;
       if (
+        i.clicked_at ||
         i.state === "LINK_CLICKED" ||
         i.state === "CREDENTIALS_SUBMITTED"
       )
         entry.clicked++;
-      if (i.state === "CREDENTIALS_SUBMITTED") entry.submitted++;
+      if (i.submitted_at || i.state === "CREDENTIALS_SUBMITTED") entry.submitted++;
+      if (i.reported_at || i.state === "REPORTED") entry.reported++;
       deptMap.set(dept, entry);
     }
 
@@ -62,6 +77,10 @@ export async function GET() {
         submitRate:
           stats.total > 0
             ? Math.round((stats.submitted / stats.total) * 100)
+            : 0,
+        reportRate:
+          stats.total > 0
+            ? Math.round((stats.reported / stats.total) * 100)
             : 0,
       })
     );

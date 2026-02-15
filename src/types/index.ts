@@ -60,6 +60,41 @@ export type InteractionState =
   | "REPORTED"
   | "NO_INTERACTION";
 
+export interface CallAnalytics {
+  "Phishing Susceptibility Analysis"?: {
+    fellForPhish: boolean;
+    suspicionLevel: "none" | "low" | "medium" | "high";
+    timeToSuspicion?: number;
+    agreedToAction: boolean;
+    riskLevel: "critical" | "high" | "medium" | "low";
+  };
+  "Red Flags Recognition"?: {
+    redFlagsIdentified: string[];
+    redFlagsMissed: string[];
+    verificationAttempted: boolean;
+  };
+  "Employee Response Analysis"?: {
+    responseType: "complied_immediately" | "asked_questions" | "requested_verification" | "refused_politely" | "hung_up" | "reported_to_it";
+    questionsAsked?: string[];
+    emotionalState: "calm" | "nervous" | "confused" | "defensive" | "cooperative";
+    informationShared: boolean;
+  };
+  "Call Quality Metrics"?: {
+    callDuration: number;
+    employeeSpeakingPercentage?: number;
+    engagementLevel: "high" | "medium" | "low";
+    callOutcome: "completed_successfully" | "employee_hung_up" | "voicemail" | "no_answer" | "technical_issue";
+    conversationNaturalness?: number;
+  };
+  "Training Recommendations"?: {
+    strongPoints: string[];
+    weaknesses: string[];
+    trainingModules?: string[];
+    riskScore: number;
+    followUpRequired: boolean;
+  };
+}
+
 export interface Interaction {
   id: string;
   campaign_id: string;
@@ -72,6 +107,10 @@ export interface Interaction {
   learning_viewed_at?: string;
   vishing_call_id?: string;
   vishing_outcome?: string;
+  call_transcript?: string;
+  call_recording_url?: string;
+  call_duration?: number;
+  call_analytics?: CallAnalytics;
   user_agent?: string;
   created_at: string;
   updated_at: string;

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CallAnalyticsCard } from "@/components/call-analytics-card";
 import {
   BarChart,
   Bar,
@@ -41,7 +42,11 @@ import {
   CheckCircle2,
   Mail,
   Phone,
+  Trash2,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
+import type { Interaction, Employee } from "@/types";
 
 interface AnalyticsData {
   overview: {
@@ -87,13 +92,102 @@ const PIE_COLORS = [COLORS.danger, COLORS.warning, COLORS.success];
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [dateRange, setDateRange] = useState("30");
+  const [recentCallAnalytics, setRecentCallAnalytics] = useState<Array<Interaction & { employee: Employee }>>([]);
+  const [recentEmailInteractions, setRecentEmailInteractions] = useState<Array<Interaction & { employee: Employee }>>([]);
+  const [clearingCampaigns, setClearingCampaigns] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    fetchData();
+    processCallAnalytics(); // Check for completed calls on mount
+
+    // Auto-check for new call results every 15 seconds
+    const interval = setInterval(() => {
+      processCallAnalytics();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  async function processCallAnalytics() {
+    try {
+      const res = await fetch('/api/calls/process-analytics', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.processed > 0) {
+          console.log(`Processed ${data.processed} call analytics, sent ${data.emailsSent} emails`);
+          // Reload data to show new analytics
+          fetchData();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to process call analytics:', error);
+    }
+  }
+
+  async function fetchData() {
     fetch("/api/analytics")
       .then((r) => r.json())
       .then(setData)
       .catch(() => {});
-  }, []);
+
+    // Fetch recent interactions
+    fetchRecentInteractions();
+  }
+
+  async function fetchRecentInteractions() {
+    try {
+      // Fetch recent call analytics
+      const callRes = await fetch("/api/interactions?with_analytics=true&limit=10");
+      if (callRes.ok) {
+        const interactions = await callRes.json();
+        setRecentCallAnalytics(interactions.filter((i: Interaction) => i.call_analytics));
+      }
+
+      // Fetch recent email interactions
+      const emailRes = await fetch("/api/interactions?limit=10");
+      if (emailRes.ok) {
+        const interactions = await emailRes.json();
+        setRecentEmailInteractions(
+          interactions.filter((i: Interaction) => !i.vishing_call_id && (i.link_clicked_at || i.form_submitted_at || i.state === 'REPORTED'))
+        );
+      }
+    } catch (error) {
+      console.error("Failed to fetch interactions:", error);
+    }
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await processCallAnalytics(); // Check for new results
+    await fetchData();
+    setTimeout(() => setRefreshing(false), 500);
+  }
+
+  async function clearAllCampaigns() {
+    if (!confirm("Are you sure you want to clear ALL campaigns and data? This cannot be undone!")) {
+      return;
+    }
+
+    setClearingCampaigns(true);
+    try {
+      const res = await fetch("/api/campaigns/clear", {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        // Refresh data
+        window.location.reload();
+      } else {
+        alert("Failed to clear campaigns");
+      }
+    } catch (error) {
+      console.error("Failed to clear campaigns:", error);
+      alert("Failed to clear campaigns");
+    } finally {
+      setClearingCampaigns(false);
+    }
+  }
 
   if (!data) {
     return (
@@ -151,6 +245,39 @@ export default function AnalyticsPage() {
             <p className="text-muted-foreground text-lg">
               Security awareness performance metrics and trends
             </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={clearAllCampaigns}
+              disabled={clearingCampaigns}
+            >
+              {clearingCampaigns ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Clearing...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All Data
+                </>
+              )}
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
           <div className="flex gap-2">
             <select
@@ -482,6 +609,128 @@ export default function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Recent Email Interactions */}
+        {recentEmailInteractions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-cyan-500" />
+                    Recent Email Interactions
+                  </CardTitle>
+                  <CardDescription>
+                    Latest phishing email simulation activity
+                  </CardDescription>
+                </div>
+                <Badge variant="secondary">
+                  {recentEmailInteractions.length} recent activities
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {recentEmailInteractions.map((interaction) => (
+                  <div
+                    key={interaction.id}
+                    className="flex items-center justify-between p-4 rounded-lg border hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-lg ${
+                        interaction.submitted_at
+                          ? 'bg-red-500/10'
+                          : interaction.clicked_at
+                          ? 'bg-amber-500/10'
+                          : 'bg-green-500/10'
+                      }`}>
+                        {interaction.submitted_at ? (
+                          <ShieldAlert className="h-5 w-5 text-red-500" />
+                        ) : interaction.clicked_at ? (
+                          <MousePointerClick className="h-5 w-5 text-amber-500" />
+                        ) : (
+                          <Flag className="h-5 w-5 text-green-500" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{interaction.employee.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {interaction.employee.department} • {interaction.employee.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        {interaction.submitted_at && (
+                          <Badge variant="outline" className="text-red-500 border-red-500">
+                            Submitted Credentials
+                          </Badge>
+                        )}
+                        {!interaction.submitted_at && interaction.clicked_at && (
+                          <Badge variant="outline" className="text-amber-500 border-amber-500">
+                            Clicked Link
+                          </Badge>
+                        )}
+                        {interaction.reported_at && (
+                          <Badge variant="outline" className="text-green-500 border-green-500">
+                            Reported
+                          </Badge>
+                        )}
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(interaction.updated_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recent Call Analytics */}
+        {recentCallAnalytics.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="h-5 w-5 text-primary" />
+                    Recent Call Analytics
+                  </CardTitle>
+                  <CardDescription>
+                    AI-powered analysis of voice phishing simulations
+                  </CardDescription>
+                </div>
+                <Badge variant="secondary">
+                  {recentCallAnalytics.length} calls analyzed
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {recentCallAnalytics.map((interaction) => (
+                <div key={interaction.id} className="space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b">
+                    <div>
+                      <h4 className="font-semibold">{interaction.employee.name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {interaction.employee.department} • {interaction.employee.position}
+                      </p>
+                    </div>
+                    <div className="text-right text-sm text-muted-foreground">
+                      {new Date(interaction.updated_at).toLocaleString()}
+                    </div>
+                  </div>
+                  <CallAnalyticsCard
+                    analytics={interaction.call_analytics!}
+                    callDuration={interaction.call_duration}
+                    recordingUrl={interaction.call_recording_url}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recommendations */}
         <Card className="border-l-4 border-l-warning">
