@@ -170,7 +170,7 @@ export default function NewDrillPage() {
     if (!validateStep(step)) return;
 
     setLoading(true);
-    const res = await fetch("/api/campaigns", {
+    const res = await fetch("/api/drills", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
