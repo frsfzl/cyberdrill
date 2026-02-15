@@ -62,9 +62,9 @@ export function Sidebar() {
   }, [activeIndex]);
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-white/[0.06] bg-[#0a0a0f]">
+    <aside className="flex h-screen w-64 flex-col bg-[#0a0a0f]">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 px-6 border-b border-white/[0.06]">
+      <div className="flex h-16 items-center gap-2.5 px-6">
         <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 flex items-center justify-center overflow-hidden">
           <Shield className="h-4 w-4 text-blue-400" />
         </div>
