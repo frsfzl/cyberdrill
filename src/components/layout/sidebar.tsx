@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   Users,
-  Target,
+  Send,
   BarChart3,
   Settings,
   LogOut,
@@ -17,7 +17,7 @@ import Image from "next/image";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/drills", label: "Drills", icon: Target },
+  { href: "/dashboard/drills", label: "Drills", icon: Send },
   { href: "/dashboard/employees", label: "Employees", icon: Users },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
 ];
@@ -73,7 +73,7 @@ export function Sidebar() {
           />
         </div>
         <span className="text-lg font-semibold text-white tracking-tight">
-          CyberDrill
+          Cyberdrill
         </span>
       </div>
 

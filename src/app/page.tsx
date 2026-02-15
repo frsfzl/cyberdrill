@@ -23,7 +23,7 @@ import {
   Github
 } from "lucide-react";
 
-export default function CyberDrillPage() {
+export default function CyberdrillPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
       {/* Background gradient */}
@@ -36,19 +36,10 @@ export default function CyberDrillPage() {
       <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 py-4">
         <nav className="max-w-6xl mx-auto bg-[#111118]/60 backdrop-blur-xl rounded-full border border-white/[0.06] px-2 py-1.5 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 px-4 py-2">
-            <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 flex items-center justify-center overflow-hidden">
-              <Shield className="h-4 w-4 text-blue-400" />
-            </div>
-            <span 
-              className="text-xl text-white/90 tracking-tight"
-              style={{
-                fontFamily: 'var(--font-playfair)',
-                fontStyle: 'italic',
-                fontWeight: 400,
-              }}
-            >
-              CyberDrill
+          <Link href="/" className="flex items-center gap-1.5 px-4 py-2">
+            <img src="/cyberdrill_logo.png" alt="Cyberdrill" className="w-8 h-8 object-contain" />
+            <span className="text-lg font-semibold text-white tracking-tight">
+              Cyberdrill
             </span>
           </Link>
 
@@ -98,8 +89,8 @@ export default function CyberDrillPage() {
 
         <div className="relative z-10 max-w-5xl mx-auto text-center">
           {/* Main Headline - One Liner */}
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-normal tracking-tighter leading-[0.95] mb-16 text-white">
-            <span 
+          <h1 className="text-4xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-6xl font-normal tracking-tighter leading-[0.95] mb-16 text-white">
+            <span
               className="block"
               style={{
                 fontFamily: 'var(--font-playfair)',
@@ -107,7 +98,7 @@ export default function CyberDrillPage() {
                 fontWeight: 400,
               }}
             >
-              Drill Your Team.
+              Make Security Second Nature.
             </span>
           </h1>
 
@@ -129,7 +120,7 @@ export default function CyberDrillPage() {
               {/* Video label */}
               <div className="absolute bottom-6 left-6">
                 <p className="text-sm text-neutral-400">Watch Demo</p>
-                <p className="text-lg font-medium text-white">See CyberDrill in action</p>
+                <p className="text-lg font-medium text-white">See Cyberdrill in action</p>
               </div>
 
               {/* Corner decoration */}
@@ -312,7 +303,7 @@ export default function CyberDrillPage() {
                 </span>
               </h2>
               <p className="text-lg text-neutral-400 mb-8">
-                Modern threats come through multiple channels. CyberDrill simulates them all 
+                Modern threats come through multiple channels. Cyberdrill simulates them all 
                 so your team is prepared for anything.
               </p>
 
@@ -478,7 +469,7 @@ export default function CyberDrillPage() {
             ?
           </h2>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto mb-10">
-            Join thousands of security teams using CyberDrill to build a culture of security awareness. 
+            Join thousands of security teams using Cyberdrill to build a culture of security awareness. 
             Start your free trial today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -511,19 +502,10 @@ export default function CyberDrillPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
-              <Link href="/" className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 flex items-center justify-center">
-                  <Shield className="h-4 w-4 text-blue-400" />
-                </div>
-                <span 
-                  className="text-xl text-white/90 tracking-tight"
-                  style={{
-                    fontFamily: 'var(--font-playfair)',
-                    fontStyle: 'italic',
-                    fontWeight: 400,
-                  }}
-                >
-                  CyberDrill
+              <Link href="/" className="flex items-center gap-1.5 mb-4">
+                <img src="/cyberdrill_logo.png" alt="Cyberdrill" className="w-8 h-8 object-contain" />
+                <span className="text-lg font-semibold text-white tracking-tight">
+                  Cyberdrill
                 </span>
               </Link>
               <p className="text-sm text-neutral-500 mb-4">
@@ -588,7 +570,7 @@ export default function CyberDrillPage() {
           {/* Bottom */}
           <div className="pt-8 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-neutral-600">
-              © 2026 CyberDrill. All rights reserved.
+              © 2026 Cyberdrill. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link href="#" className="text-sm text-neutral-600 hover:text-neutral-400 transition-colors">

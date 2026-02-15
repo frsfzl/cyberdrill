@@ -16,8 +16,11 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Landio - AI Automation for Modern Businesses",
-  description: "Supercharge your startup's growth with Landio—the ultimate AI-powered automation platform. Automate operations, boost productivity, and scale your business.",
+  title: "Cyberdrill",
+  description: "Phishing simulation and security awareness platform for organizations.",
+  icons: {
+    icon: "/cyberdrill_logo.png",
+  },
 };
 
 export default function RootLayout({
