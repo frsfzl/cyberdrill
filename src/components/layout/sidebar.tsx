@@ -8,13 +8,13 @@ import {
   Users,
   Target,
   BarChart3,
-  Shield,
   AlertTriangle,
   Settings,
   LogOut,
   ChevronUp,
   User,
 } from "lucide-react";
+import Image from "next/image";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -64,18 +64,17 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-52 flex-col bg-[#0a0a0f]">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 px-5">
-        <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 flex items-center justify-center overflow-hidden">
-          <Shield className="h-4 w-4 text-blue-400" />
+      <div className="flex h-20 items-center gap-1.5 px-3 pt-2">
+        <div className="relative w-14 h-14 flex items-center justify-center mt-1">
+          <Image 
+            src="/cyberdrill_logo.png" 
+            alt="CyberDrill" 
+            width={56} 
+            height={56} 
+            className="object-contain"
+          />
         </div>
-        <span 
-          className="text-lg text-white/90 tracking-tight"
-          style={{
-            fontFamily: 'var(--font-playfair)',
-            fontStyle: 'italic',
-            fontWeight: 400,
-          }}
-        >
+        <span className="text-lg font-semibold text-white tracking-tight">
           CyberDrill
         </span>
       </div>
@@ -161,8 +160,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Profile Section - No border */}
-      <div className="p-3">
+      {/* Profile Section */}
+      <div className="px-3 pb-4">
         <ProfileDropdown />
       </div>
 
@@ -219,22 +218,22 @@ function ProfileDropdown() {
       {/* Profile Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 group"
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 group"
       >
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-          <User className="h-4 w-4 text-blue-400" />
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+          <User className="h-3.5 w-3.5 text-blue-400" />
         </div>
 
         {/* Info */}
-        <div className="flex-1 text-left">
-          <p className="text-sm font-medium text-white">Admin</p>
-          <p className="text-xs text-neutral-500">admin@cyberdrill.com</p>
+        <div className="flex-1 text-left min-w-0">
+          <p className="text-sm font-medium text-white truncate">Admin</p>
+          <p className="text-[11px] text-neutral-500 truncate">admin@cyberdrill.com</p>
         </div>
 
         {/* Chevron */}
         <ChevronUp 
-          className={`h-4 w-4 text-neutral-500 transition-transform duration-300 ${
+          className={`h-3.5 w-3.5 text-neutral-500 transition-transform duration-300 flex-shrink-0 ${
             isOpen ? "" : "rotate-180"
           }`} 
         />
@@ -250,15 +249,15 @@ function ProfileDropdown() {
           />
           
           {/* Menu */}
-          <div className="absolute bottom-full left-4 right-4 mb-2 p-2 rounded-xl bg-[#111118] border border-white/[0.08] shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-300 hover:text-white hover:bg-white/[0.05] transition-colors">
-              <Settings className="h-4 w-4" />
-              Settings
+          <div className="absolute bottom-full left-0 right-0 mb-2 p-1.5 rounded-xl bg-[#111118] border border-white/[0.08] shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-300 hover:text-white hover:bg-white/[0.05] transition-colors">
+              <Settings className="h-4 w-4 text-neutral-400" />
+              <span>Settings</span>
             </button>
-            <div className="my-1 border-t border-white/[0.06]" />
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+            <div className="my-1 mx-1 border-t border-white/[0.06]" />
+            <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
               <LogOut className="h-4 w-4" />
-              Logout
+              <span>Logout</span>
             </button>
           </div>
         </>

@@ -33,9 +33,11 @@ export default function EmployeesPage() {
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -49,6 +51,21 @@ export default function EmployeesPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Track scroll position for floating effect
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    const handleScroll = () => {
+      setIsScrolled(main.scrollTop > 60);
+    };
+    
+    main.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    
+    return () => main.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Close add menu when clicking outside
   useEffect(() => {
@@ -132,18 +149,30 @@ export default function EmployeesPage() {
 
   return (
     <DashboardShell>
-      <div className="px-8 py-6 min-h-full">
-        {/* Header */}
-        <div className="pb-3">
+      <div className="relative">
+        {/* Floating Header Bar */}
+        <div 
+          ref={headerRef}
+          className={`transition-all duration-500 ease-out z-30 ${
+            isScrolled 
+              ? "fixed top-4 left-[232px] right-6 px-6 py-3 bg-[#111118]/95 backdrop-blur-xl rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/50"
+              : "px-8 py-6 bg-transparent"
+          }`}
+          style={{ width: isScrolled ? "calc(100% - 280px)" : "auto" }}
+        >
           <div className="flex items-center justify-between gap-4">
             {/* Left: Search & Filters */}
             <div className="flex items-center gap-3">
               {/* Search */}
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+              <div className={`relative transition-all duration-300 ${isScrolled ? "w-56" : "w-64"}`}>
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${isScrolled ? "text-neutral-400" : "text-neutral-500"}`} />
                 <Input
                   placeholder="Search employees..."
-                  className="pl-10 bg-[#111118]/60 border-white/[0.06] rounded-xl h-10 text-sm placeholder:text-neutral-500 focus:border-blue-500/50 disabled:opacity-50"
+                  className={`pl-10 border-white/[0.06] rounded-xl h-10 text-sm placeholder:text-neutral-500 focus:border-blue-500/50 disabled:opacity-50 transition-all duration-300 ${
+                    isScrolled 
+                      ? "bg-[#0a0a0f] border-white/[0.08]" 
+                      : "bg-[#111118]/60"
+                  }`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   disabled={loading}
@@ -156,7 +185,9 @@ export default function EmployeesPage() {
                   variant="outline"
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
                   disabled={loading}
-                  className={`h-10 px-3 rounded-xl border-white/[0.06] bg-[#111118]/60 hover:bg-white/[0.05] transition-all disabled:opacity-50 ${
+                  className={`h-10 px-3 rounded-xl border-white/[0.06] hover:bg-white/[0.05] transition-all disabled:opacity-50 ${
+                    isScrolled ? "bg-[#0a0a0f] border-white/[0.08]" : "bg-[#111118]/60"
+                  } ${
                     activeFiltersCount > 0 ? "border-blue-500/30 bg-blue-500/5" : ""
                   }`}
                 >
@@ -176,7 +207,9 @@ export default function EmployeesPage() {
                       className="fixed inset-0 z-40" 
                       onClick={() => setIsFilterOpen(false)}
                     />
-                    <div className="absolute top-full left-0 mt-2 w-56 p-3 rounded-xl bg-[#111118] border border-white/[0.08] shadow-2xl z-50">
+                    <div className={`absolute top-full left-0 mt-2 w-56 p-3 rounded-xl border border-white/[0.08] shadow-2xl z-50 ${
+                      isScrolled ? "bg-[#0a0a0f]" : "bg-[#111118]"
+                    }`}>
                       <div className="space-y-3">
                         <div>
                           <label className="text-xs text-neutral-500 mb-1.5 block">Department</label>
@@ -308,24 +341,27 @@ export default function EmployeesPage() {
           </div>
         </div>
 
+        {/* Spacer when floating */}
+        <div className={`transition-all duration-500 ${isScrolled ? "h-20" : "h-0"}`} />
+
         {/* Employee List */}
-        <div className="pt-1">
+        <div className="px-8 pt-2 pb-8">
+          {/* Table Header - Static at top */}
+          <div className="flex items-center px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <div className="flex-1 min-w-0">Employee</div>
+            <div className="w-48 hidden md:block">Contact</div>
+            <div className="w-32 hidden lg:block">Department</div>
+            <div className="w-32 hidden sm:block">Position</div>
+            <div className="w-24">Status</div>
+            <div className="w-10"></div>
+          </div>
+
           {loading ? (
             <LoadingState />
           ) : filtered.length === 0 ? (
             <EmptyState hasEmployees={employees.length > 0} />
           ) : (
             <div className="space-y-1">
-              {/* Table Header */}
-              <div className="flex items-center px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                <div className="flex-1 min-w-0">Employee</div>
-                <div className="w-48 hidden md:block">Contact</div>
-                <div className="w-32 hidden lg:block">Department</div>
-                <div className="w-32 hidden sm:block">Position</div>
-                <div className="w-24">Status</div>
-                <div className="w-10"></div>
-              </div>
-
               {/* Table Rows */}
               {filtered.map((emp, index) => {
                 const initials = emp.name
@@ -447,16 +483,6 @@ export default function EmployeesPage() {
 function LoadingState() {
   return (
     <div className="space-y-1">
-      {/* Table Header Skeleton */}
-      <div className="flex items-center px-4 py-3">
-        <div className="flex-1 min-w-0 h-4 w-16 bg-white/[0.05] rounded animate-pulse" />
-        <div className="w-48 hidden md:block h-4 w-16 bg-white/[0.05] rounded animate-pulse" />
-        <div className="w-32 hidden lg:block h-4 w-16 bg-white/[0.05] rounded animate-pulse" />
-        <div className="w-32 hidden sm:block h-4 w-16 bg-white/[0.05] rounded animate-pulse" />
-        <div className="w-24 h-4 w-12 bg-white/[0.05] rounded animate-pulse" />
-        <div className="w-10" />
-      </div>
-
       {/* Table Rows Skeleton */}
       {[1, 2, 3, 4, 5, 6].map((row) => (
         <div
