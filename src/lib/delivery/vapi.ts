@@ -49,40 +49,11 @@ export async function makeVapiCall(params: VapiCallParams): Promise<VapiCallResu
   console.log(`[VAPI] 🏢 Company: ${params.companyName || 'N/A'}`);
   console.log(`[VAPI] 📞 Phone Number ID: ${phoneNumberId}`);
   console.log(`[VAPI] 📝 Script length: ${params.script.length} chars`);
+  const assistantId = process.env.VAPI_ASSISTANT_ID;
 
-  // Use inline assistant configuration for dynamic per-call customization
-  const assistant = {
-    model: {
-      provider: 'openai',
-      model: 'gpt-3.5-turbo',
-      temperature: 0.7,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a professional IT Security representative from ${params.companyName || 'the company'}.
-
-Your goal is to deliver the following security message to ${params.employeeName || 'the employee'}:
-
-${params.script}
-
-IMPORTANT GUIDELINES:
-- Stay in character as IT Security
-- Be professional and courteous
-- Create urgency but don't be aggressive
-- If asked questions, redirect to "checking the email we sent"
-- Keep the call under 2 minutes
-- End by thanking them for their cooperation`
-        }
-      ]
-    },
-    voice: {
-      provider: '11labs',
-      voiceId: 'bIHbv24MWmeRgasZH58o' // Professional male voice
-    },
-    firstMessage: `Hello, this is ${params.companyName || 'IT'} Security Department. May I speak with ${params.employeeName || 'you'}?`,
-    endCallMessage: 'Thank you for your time. Have a great day.',
-    endCallPhrases: ['goodbye', 'hang up', 'end call', 'bye']
-  };
+  if (!assistantId) {
+    throw new Error('VAPI_ASSISTANT_ID not configured');
+  }
 
   const requestBody = {
     phoneNumberId,
@@ -90,10 +61,26 @@ IMPORTANT GUIDELINES:
       number: phoneNumber,
       numberE164CheckEnabled: false
     },
-    assistant
+    assistantId, // Use permanent assistant with structured outputs
+    assistantOverrides: {
+      // Override the system prompt with dynamic script
+      model: {
+        provider: 'openai',
+        model: 'gpt-3.5-turbo',
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'system',
+            content: params.script
+          }
+        ]
+      },
+      firstMessage: `Hello, this is ${params.companyName || 'IT'} Security Department. May I speak with ${params.employeeName || 'you'}?`
+    }
   };
 
   console.log(`[VAPI] 🚀 Sending API request...`);
+  console.log(`[VAPI] Using assistant ID: ${assistantId}`);
   console.log(`[VAPI] Request body:`, JSON.stringify(requestBody, null, 2));
 
   const response = await fetch('https://api.vapi.ai/call/phone', {
@@ -137,6 +124,8 @@ export async function getVapiCallStatus(callId: string) {
     throw new Error('VAPI credentials not configured');
   }
 
+  console.log(`[VAPI] 📞 Fetching call status for: ${callId}`);
+
   const response = await fetch(`https://api.vapi.ai/call/${callId}`, {
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -144,8 +133,55 @@ export async function getVapiCallStatus(callId: string) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get call status');
+    const errorText = await response.text();
+    console.error(`[VAPI] ❌ Failed to get call status:`, errorText);
+    throw new Error(`Failed to get call status: ${response.status}`);
   }
 
-  return await response.json();
+  const data = await response.json();
+  console.log(`[VAPI] ✅ Call status: ${data.status}`);
+
+  return data;
+}
+
+export async function processCallAnalytics(callId: string) {
+  console.log(`[VAPI] 📊 Processing analytics for call: ${callId}`);
+
+  const call = await getVapiCallStatus(callId);
+
+  // Check if call has ended
+  if (call.status !== 'ended') {
+    console.log(`[VAPI] ⏳ Call not ended yet, status: ${call.status}`);
+    return null;
+  }
+
+  // Extract structured outputs
+  const artifact = call.artifact || {};
+  const structuredOutputs = artifact.structuredOutputs || {};
+
+  console.log(`[VAPI] 📊 Found ${Object.keys(structuredOutputs).length} structured outputs`);
+
+  // Map structured outputs by name
+  const analytics: Record<string, any> = {};
+  Object.entries(structuredOutputs).forEach(([outputId, data]: [string, any]) => {
+    console.log(`[VAPI] 📋 Processing: ${data.name}`);
+    analytics[data.name] = data.result;
+  });
+
+  // Extract call metadata
+  const transcript = call.transcript || '';
+  const recordingUrl = call.recordingUrl || '';
+  const duration = call.endedAt && call.startedAt
+    ? Math.floor((new Date(call.endedAt).getTime() - new Date(call.startedAt).getTime()) / 1000)
+    : 0;
+
+  console.log(`[VAPI] ✅ Analytics processed successfully`);
+
+  return {
+    analytics,
+    transcript,
+    recordingUrl,
+    duration,
+    status: call.status,
+  };
 }
