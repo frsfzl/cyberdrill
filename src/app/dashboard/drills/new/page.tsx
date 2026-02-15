@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,7 +69,7 @@ const PRETEXT_SCENARIOS = [
   },
 ];
 
-export default function NewCampaignPage() {
+export default function NewDrillPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -185,8 +186,8 @@ export default function NewCampaignPage() {
     });
 
     if (res.ok) {
-      const campaign = await res.json();
-      router.push(`/dashboard/campaigns/${campaign.id}`);
+      const drill = await res.json();
+      router.push(`/dashboard/drills/${drill.id}`);
     } else {
       setErrors({ submit: "Failed to create campaign. Please try again." });
     }
@@ -210,7 +211,7 @@ export default function NewCampaignPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Create Campaign</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Create Drill</h1>
               <p className="text-muted-foreground mt-1">
                 Configure and deploy a new phishing simulation
               </p>
@@ -273,7 +274,7 @@ export default function NewCampaignPage() {
                   id="name"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Q1 2026 Security Awareness Drill"
+                  placeholder="Q1 2026 Security Awareness Test"
                   className={errors.name ? "border-destructive" : ""}
                 />
                 {errors.name && (

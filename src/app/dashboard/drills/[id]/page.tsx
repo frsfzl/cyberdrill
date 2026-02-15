@@ -23,9 +23,9 @@ import {
   BarChart3,
   ExternalLink,
 } from "lucide-react";
-import type { Campaign, Interaction } from "@/types";
+import type { Campaign as Drill, Interaction } from "@/types";
 
-type CampaignWithInteractions = Campaign & {
+type DrillWithInteractions = Drill & {
   interactions: (Interaction & {
     employees: { name: string; email: string; department: string };
   })[];
@@ -46,41 +46,41 @@ const stateLabels: Record<string, { label: string; color: string }> = {
   NO_INTERACTION: { label: "No Action", color: "bg-muted" },
 };
 
-export default function CampaignMonitorPage() {
+export default function DrillMonitorPage() {
   const { id } = useParams<{ id: string }>();
-  const [campaign, setCampaign] = useState<CampaignWithInteractions | null>(
+  const [drill, setDrill] = useState<DrillWithInteractions | null>(
     null
   );
   const [launching, setLaunching] = useState(false);
   const [closing, setClosing] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/campaigns/${id}`);
-    if (res.ok) setCampaign(await res.json());
+    const res = await fetch(`/api/drills/${id}`);
+    if (res.ok) setDrill(await res.json());
   }, [id]);
 
   useEffect(() => {
     load();
-    // Poll every 5 seconds when campaign is active
+    // Poll every 5 seconds when drill is active
     const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, [load]);
 
   async function handleLaunch() {
     setLaunching(true);
-    await fetch(`/api/campaigns/${id}/launch`, { method: "POST" });
+    await fetch(`/api/drills/${id}/launch`, { method: "POST" });
     await load();
     setLaunching(false);
   }
 
   async function handleClose() {
     setClosing(true);
-    await fetch(`/api/campaigns/${id}/close`, { method: "POST" });
+    await fetch(`/api/drills/${id}/close`, { method: "POST" });
     await load();
     setClosing(false);
   }
 
-  if (!campaign) {
+  if (!drill) {
     return (
       <DashboardShell>
         <div className="flex items-center justify-center py-12">
@@ -90,7 +90,7 @@ export default function CampaignMonitorPage() {
     );
   }
 
-  const interactions = campaign.interactions || [];
+  const interactions = drill.interactions || [];
   const total = interactions.length;
   const clicked = interactions.filter(
     (i) =>
@@ -104,23 +104,23 @@ export default function CampaignMonitorPage() {
     <DashboardShell>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">{campaign.name}</h2>
-          <p className="text-muted-foreground">{campaign.pretext_scenario}</p>
+          <h2 className="text-2xl font-bold">{drill.name}</h2>
+          <p className="text-muted-foreground">{drill.pretext_scenario}</p>
         </div>
         <div className="flex gap-2">
-          {campaign.status === "draft" && (
+          {drill.status === "draft" && (
             <Button onClick={handleLaunch} disabled={launching}>
               {launching ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Play className="mr-2 h-4 w-4" />
               )}
-              Launch Campaign
+              Launch Drill
             </Button>
           )}
-          {campaign.status === "active" && (
+          {drill.status === "active" && (
             <>
-              <Link href={`/dashboard/campaigns/${id}/report`}>
+              <Link href={`/dashboard/drills/${id}/report`}>
                 <Button variant="outline">
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Report
@@ -136,12 +136,12 @@ export default function CampaignMonitorPage() {
                 ) : (
                   <Square className="mr-2 h-4 w-4" />
                 )}
-                Close Campaign
+                Close Drill
               </Button>
             </>
           )}
-          {campaign.status === "closed" && (
-            <Link href={`/dashboard/campaigns/${id}/report`}>
+          {drill.status === "closed" && (
+            <Link href={`/dashboard/drills/${id}/report`}>
               <Button>
                 <BarChart3 className="mr-2 h-4 w-4" />
                 View Report
@@ -159,7 +159,7 @@ export default function CampaignMonitorPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge className="text-lg px-3 py-1">{campaign.status}</Badge>
+            <Badge className="text-lg px-3 py-1">{drill.status}</Badge>
           </CardContent>
         </Card>
         <Card>
@@ -206,19 +206,19 @@ export default function CampaignMonitorPage() {
         </Card>
       </div>
 
-      {campaign.ngrok_url && (
+      {drill.ngrok_url && (
         <Card>
           <CardContent className="flex items-center justify-between py-3">
             <span className="text-sm text-muted-foreground">
               Phishing page URL:
             </span>
             <a
-              href={campaign.ngrok_url}
+              href={drill.ngrok_url}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-primary flex items-center gap-1"
             >
-              {campaign.ngrok_url}
+              {drill.ngrok_url}
               <ExternalLink className="h-3 w-3" />
             </a>
           </CardContent>

@@ -144,14 +144,8 @@ export default function AnalyticsPage() {
   return (
     <DashboardShell>
       <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1.5">
-            <h1 className="text-4xl font-bold tracking-tight">Analytics & Insights</h1>
-            <p className="text-muted-foreground text-lg">
-              Security awareness performance metrics and trends
-            </p>
-          </div>
+        {/* Controls */}
+        <div className="flex justify-end">
           <div className="flex gap-2">
             <select
               value={dateRange}

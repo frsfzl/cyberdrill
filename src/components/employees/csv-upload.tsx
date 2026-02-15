@@ -45,9 +45,9 @@ export function CsvUpload({ onSuccess }: CsvUploadProps) {
         variant="outline"
         onClick={() => fileRef.current?.click()}
         disabled={loading}
+        className="h-10 px-3 rounded-xl border-white/[0.06] bg-transparent hover:bg-white/[0.05] text-neutral-400 hover:text-white transition-all"
       >
-        <Upload className="mr-2 h-4 w-4" />
-        {loading ? "Importing..." : "Import CSV"}
+        <Upload className="h-4 w-4" />
       </Button>
     </>
   );

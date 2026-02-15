@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users, Target, BarChart3, Plus } from "lucide-react";
-import type { Campaign, Employee } from "@/types";
+import { Users, Target, BarChart3 } from "lucide-react";
+import type { Campaign as Drill, Employee } from "@/types";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -14,24 +13,24 @@ export default function DashboardPage() {
     campaigns: 0,
     activeCampaigns: 0,
   });
-  const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
+  const [recentDrills, setRecentDrills] = useState<Drill[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
-        const [empRes, campRes] = await Promise.all([
+        const [empRes, drillRes] = await Promise.all([
           fetch("/api/employees"),
-          fetch("/api/campaigns"),
+          fetch("/api/drills"),
         ]);
         const employees: Employee[] = await empRes.json();
-        const campaigns: Campaign[] = await campRes.json();
+        const drills: Drill[] = await drillRes.json();
         setStats({
           employees: employees.length,
-          campaigns: campaigns.length,
-          activeCampaigns: campaigns.filter((c) => c.status === "active")
+          campaigns: drills.length,
+          activeCampaigns: drills.filter((d) => d.status === "active")
             .length,
         });
-        setRecentCampaigns(campaigns.slice(0, 5));
+        setRecentDrills(drills.slice(0, 5));
       } catch {
         // API may not be ready yet
       }
@@ -46,12 +45,12 @@ export default function DashboardPage() {
       icon: Users,
     },
     {
-      title: "Total Campaigns",
+      title: "Total Drills",
       value: stats.campaigns,
       icon: Target,
     },
     {
-      title: "Active Campaigns",
+      title: "Active Drills",
       value: stats.activeCampaigns,
       icon: BarChart3,
     },
@@ -59,16 +58,6 @@ export default function DashboardPage() {
 
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Dashboard</h2>
-        <Link href="/dashboard/campaigns/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Campaign
-          </Button>
-        </Link>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-3">
         {statCards.map((stat) => (
           <Card key={stat.title}>
@@ -87,29 +76,29 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Campaigns</CardTitle>
+          <CardTitle>Recent Drills</CardTitle>
         </CardHeader>
         <CardContent>
-          {recentCampaigns.length === 0 ? (
+          {recentDrills.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No campaigns yet. Create your first campaign to get started.
+              No drills yet. Create your first drill to get started.
             </p>
           ) : (
             <div className="space-y-3">
-              {recentCampaigns.map((campaign) => (
+              {recentDrills.map((drill) => (
                 <Link
-                  key={campaign.id}
-                  href={`/dashboard/campaigns/${campaign.id}`}
+                  key={drill.id}
+                  href={`/dashboard/drills/${drill.id}`}
                   className="flex items-center justify-between rounded-md border p-3 hover:bg-accent transition-colors"
                 >
                   <div>
-                    <p className="font-medium">{campaign.name}</p>
+                    <p className="font-medium">{drill.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {campaign.pretext_scenario}
+                      {drill.pretext_scenario}
                     </p>
                   </div>
                   <span className="text-xs font-medium uppercase rounded-full bg-secondary px-2 py-1">
-                    {campaign.status}
+                    {drill.status}
                   </span>
                 </Link>
               ))}

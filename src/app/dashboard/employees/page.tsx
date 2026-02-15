@@ -2,23 +2,22 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { EmployeeTable } from "@/components/employees/employee-table";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { CsvUpload } from "@/components/employees/csv-upload";
 import {
   Search,
   Users,
-  UserX,
   Building2,
-  Download,
+  ChevronDown,
+  X,
+  Plus,
   Filter,
-  TrendingUp,
-  CheckCircle2,
-  XCircle
+  Trash2,
+  Mail,
+  Phone
 } from "lucide-react";
 import type { Employee } from "@/types";
 
@@ -27,7 +26,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"table" | "departments">("table");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/employees");
@@ -62,304 +61,244 @@ export default function EmployeesPage() {
     return matchesSearch && matchesDepartment && matchesStatus;
   });
 
-  const stats = {
-    total: employees.length,
-    active: employees.filter((e) => !e.opted_out).length,
-    optedOut: employees.filter((e) => e.opted_out).length,
-    departments: [...new Set(employees.map((e) => e.department))].length,
-  };
-
   const departments = [...new Set(employees.map((e) => e.department || "Unassigned"))];
 
-  const departmentGroups = employees.reduce((acc, emp) => {
-    const dept = emp.department || "Unassigned";
-    if (!acc[dept]) acc[dept] = [];
-    acc[dept].push(emp);
-    return acc;
-  }, {} as Record<string, Employee[]>);
-
-  function exportToCsv() {
-    const csv = [
-      ["Name", "Email", "Phone", "Department", "Position", "Manager", "Status"].join(","),
-      ...filtered.map((e) =>
-        [
-          e.name,
-          e.email,
-          e.phone,
-          e.department,
-          e.position,
-          e.manager_email || "",
-          e.opted_out ? "Opted Out" : "Active",
-        ].join(",")
-      ),
-    ].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `employees-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  const activeFiltersCount = 
+    (departmentFilter !== "all" ? 1 : 0) + 
+    (statusFilter !== "all" ? 1 : 0);
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1.5">
-            <h1 className="text-4xl font-bold tracking-tight">Employees</h1>
-            <p className="text-muted-foreground text-lg">
-              Manage employee directory and simulation eligibility
-            </p>
+      <div className="relative">
+        {/* Clean Top Bar - Single Line - Sticky */}
+        <div className="sticky top-0 z-30 px-8 py-4 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between gap-4" style={{ position: 'sticky', top: 0 }}>
+          {/* Left: Search & Filters */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+              <Input
+                placeholder="Search employees..."
+                className="pl-10 bg-[#111118]/60 border-white/[0.06] rounded-xl h-10 text-sm placeholder:text-neutral-500 focus:border-blue-500/50"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Filter Dropdown */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`h-10 px-3 rounded-xl border-white/[0.06] bg-[#111118]/60 hover:bg-white/[0.05] transition-all ${
+                  activeFiltersCount > 0 ? "border-blue-500/30 bg-blue-500/5" : ""
+                }`}
+              >
+                <Filter className="h-4 w-4 mr-2 text-neutral-400" />
+                <span className="text-sm text-neutral-300">Filter</span>
+                {activeFiltersCount > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </Button>
+
+              {/* Filter Dropdown Menu */}
+              {isFilterOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsFilterOpen(false)}
+                  />
+                  <div className="absolute top-full left-0 mt-2 w-56 p-3 rounded-xl bg-[#111118] border border-white/[0.08] shadow-2xl z-50">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs text-neutral-500 mb-1.5 block">Department</label>
+                        <select
+                          value={departmentFilter}
+                          onChange={(e) => setDepartmentFilter(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-[#0a0a0f] border border-white/[0.06] text-sm text-neutral-300 focus:border-blue-500/50 outline-none"
+                        >
+                          <option value="all">All</option>
+                          {departments.map((dept) => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-neutral-500 mb-1.5 block">Status</label>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-[#0a0a0f] border border-white/[0.06] text-sm text-neutral-300 focus:border-blue-500/50 outline-none"
+                        >
+                          <option value="all">All</option>
+                          <option value="active">Active</option>
+                          <option value="opted-out">Opted Out</option>
+                        </select>
+                      </div>
+                      {activeFiltersCount > 0 && (
+                        <button
+                          onClick={() => { setDepartmentFilter("all"); setStatusFilter("all"); }}
+                          className="w-full text-xs text-neutral-400 hover:text-white py-1"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Active Filter Pills */}
+            {departmentFilter !== "all" && (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-sm text-blue-400">
+                <Building2 className="h-3.5 w-3.5" />
+                <span>{departmentFilter}</span>
+                <button 
+                  onClick={() => setDepartmentFilter("all")}
+                  className="ml-1 hover:text-blue-300 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+            {statusFilter !== "all" && (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-sm text-blue-400">
+                <Users className="h-3.5 w-3.5" />
+                <span className="capitalize">{statusFilter.replace("-", " ")}</span>
+                <button 
+                  onClick={() => setStatusFilter("all")}
+                  className="ml-1 hover:text-blue-300 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex gap-2">
+
+          {/* Right: Import & Add */}
+          <div className="flex items-center gap-2">
             <CsvUpload onSuccess={load} />
             <EmployeeForm onSuccess={load} />
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="border-l-4 border-l-primary">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Total Employees
-                  </p>
-                  <p className="text-3xl font-bold mt-2">{stats.total}</p>
-                </div>
-                <Users className="h-8 w-8 text-muted-foreground/40" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-green-500">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Active</p>
-                  <p className="text-3xl font-bold mt-2">{stats.active}</p>
-                </div>
-                <CheckCircle2 className="h-8 w-8 text-green-500/40" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-red-500">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Opted Out
-                  </p>
-                  <p className="text-3xl font-bold mt-2">{stats.optedOut}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-500/40" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-violet-500">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Departments
-                  </p>
-                  <p className="text-3xl font-bold mt-2">{stats.departments}</p>
-                </div>
-                <Building2 className="h-8 w-8 text-violet-500/40" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters and Search */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or department..."
-                  className="pl-10"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+        {/* Employee List - Integrated into page */}
+        <div className="px-8 pt-6 pb-8">
+          {filtered.length === 0 ? (
+            <EmptyState hasEmployees={employees.length > 0} />
+          ) : (
+            <div className="space-y-1">
+              {/* Table Header */}
+              <div className="flex items-center px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <div className="flex-1 min-w-0">Employee</div>
+                <div className="w-48 hidden md:block">Contact</div>
+                <div className="w-32 hidden lg:block">Department</div>
+                <div className="w-32 hidden sm:block">Position</div>
+                <div className="w-24">Status</div>
+                <div className="w-10"></div>
               </div>
 
-              <select
-                value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
+              {/* Table Rows */}
+              {filtered.map((emp, index) => {
+                const initials = emp.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2);
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="opted-out">Opted Out</option>
-              </select>
+                return (
+                  <div
+                    key={emp.id}
+                    className="group flex items-center px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-colors border border-transparent hover:border-white/[0.06]"
+                    style={{ animationDelay: `${index * 20}ms` }}
+                  >
+                    {/* Employee */}
+                    <div className="flex-1 min-w-0 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-medium text-sm flex-shrink-0">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-white truncate">{emp.name}</p>
+                        <p className="text-sm text-neutral-500 truncate">{emp.email}</p>
+                      </div>
+                    </div>
 
-              <div className="flex border border-border rounded-lg">
-                <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("table")}
-                  className="rounded-r-none"
-                >
-                  Table
-                </Button>
-                <Button
-                  variant={viewMode === "departments" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("departments")}
-                  className="rounded-l-none"
-                >
-                  Departments
-                </Button>
-              </div>
+                    {/* Contact */}
+                    <div className="w-48 hidden md:block text-sm text-neutral-400">
+                      {emp.phone || "—"}
+                    </div>
 
-              <Button variant="outline" size="sm" onClick={exportToCsv}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                    {/* Department */}
+                    <div className="w-32 hidden lg:block">
+                      <span className="text-sm text-neutral-300">{emp.department || "—"}</span>
+                    </div>
 
-        {/* Employee List */}
-        {viewMode === "table" ? (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>
-                  All Employees
-                  <span className="ml-3 text-muted-foreground font-normal text-base">
-                    ({filtered.length} {filtered.length === 1 ? "result" : "results"})
-                  </span>
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="rounded-full bg-muted p-6 mb-6">
-                    <UserX className="h-12 w-12 text-muted-foreground" />
+                    {/* Position */}
+                    <div className="w-32 hidden sm:block">
+                      <span className="text-sm text-neutral-300">{emp.position || "—"}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="w-24">
+                      <Badge 
+                        variant={emp.opted_out ? "destructive" : "secondary"}
+                        className={`text-xs ${
+                          emp.opted_out 
+                            ? "bg-red-500/10 text-red-400 border-red-500/20" 
+                            : "bg-green-500/10 text-green-400 border-green-500/20"
+                        }`}
+                      >
+                        {emp.opted_out ? "Opted Out" : "Active"}
+                      </Badge>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="w-10 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(emp.id)}
+                        className="h-8 w-8 p-0 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">No employees found</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md">
-                    {employees.length === 0
-                      ? "Get started by adding employees manually or importing from CSV"
-                      : "Try adjusting your search or filter criteria"}
-                  </p>
-                </div>
-              ) : (
-                <EmployeeTable employees={filtered} onDelete={handleDelete} />
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {Object.entries(departmentGroups).map(([dept, emps]) => {
-              const deptActive = emps.filter((e) => !e.opted_out).length;
-              const deptOptedOut = emps.filter((e) => e.opted_out).length;
-
-              return (
-                <Card key={dept}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-muted">
-                          <Building2 className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-xl">{dept}</CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {emps.length} employee{emps.length !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <span className="font-medium">{deptActive} active</span>
-                          </div>
-                          {deptOptedOut > 0 && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                              <XCircle className="h-4 w-4 text-red-500" />
-                              <span>{deptOptedOut} opted out</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-3">
-                      {emps.map((emp) => (
-                        <div
-                          key={emp.id}
-                          className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <p className="font-medium">{emp.name}</p>
-                              <Badge
-                                variant={emp.opted_out ? "destructive" : "secondary"}
-                                className="text-xs"
-                              >
-                                {emp.opted_out ? "Opted Out" : "Active"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                              <span>{emp.email}</span>
-                              {emp.position && (
-                                <>
-                                  <span>•</span>
-                                  <span>{emp.position}</span>
-                                </>
-                              )}
-                              {emp.phone && (
-                                <>
-                                  <span>•</span>
-                                  <span>{emp.phone}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(emp.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </DashboardShell>
+  );
+}
+
+// Empty State Component
+function EmptyState({ hasEmployees }: { hasEmployees: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/10 flex items-center justify-center mb-6">
+        <Users className="h-10 w-10 text-blue-400/50" />
+      </div>
+      <h3 className="text-xl font-semibold text-white mb-2">
+        {hasEmployees ? "No employees found" : "No employees yet"}
+      </h3>
+      <p className="text-neutral-500 mb-6 max-w-md">
+        {hasEmployees
+          ? "Try adjusting your search or filter criteria"
+          : "Get started by adding employees manually or importing from CSV"}
+      </p>
+      {!hasEmployees && (
+        <Button className="rounded-xl bg-white hover:bg-neutral-200 text-black px-6 py-5 font-medium transition-all hover:scale-105">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Employee
+        </Button>
+      )}
+    </div>
   );
 }
