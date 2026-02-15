@@ -17,7 +17,7 @@ import {
   ChevronDown,
   Zap,
   Play,
-  MoreHorizontal,
+  Trash2,
   ArrowUpDown,
   Clock,
   CheckCircle2,
@@ -109,8 +109,6 @@ export default function DrillsPage() {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [selectedDrills, setSelectedDrills] = useState<Set<string>>(new Set());
-  const [isScrolled, setIsScrolled] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -129,21 +127,6 @@ export default function DrillsPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  // Track scroll for floating effect
-  useEffect(() => {
-    const scrollContainer = headerRef.current?.closest('[class*="overflow-y-auto"]') as HTMLElement;
-    if (!scrollContainer) return;
-
-    const handleScroll = () => {
-      setIsScrolled(scrollContainer.scrollTop > 60);
-    };
-    
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    
-    return () => scrollContainer.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const filtered = drills.filter((drill) => {
     const matchesSearch = 
@@ -191,26 +174,15 @@ export default function DrillsPage() {
   return (
     <DashboardShell>
       <div className="relative">
-        {/* Header Bar - Floating when scrolled */}
-        <div 
-          ref={headerRef}
-          className={`transition-all duration-500 ease-out z-30 ${
-            isScrolled 
-              ? "sticky top-4 mx-6 px-6 py-3 bg-[#111118]/95 backdrop-blur-xl rounded-2xl border border-white/[0.08] shadow-2xl shadow-black/50"
-              : "px-8 py-6 bg-transparent"
-          }`}
-        >
+        {/* Static Header - No floating effect */}
+        <div className="px-8 pt-6 pb-3">
           <div className="flex items-center justify-between gap-4">
             {/* Left: Search */}
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
               <Input
                 placeholder="Search..."
-                className={`pl-10 rounded-xl h-10 text-sm placeholder:text-neutral-500 focus:border-blue-500/50 disabled:opacity-50 transition-all ${
-                  isScrolled 
-                    ? "bg-[#0a0a0f] border-white/[0.08]" 
-                    : "bg-[#111118]/60 border-white/[0.06]"
-                }`}
+                className="pl-10 bg-[#111118]/60 border-white/[0.06] rounded-xl h-10 text-sm placeholder:text-neutral-500 focus:border-blue-500/50 disabled:opacity-50"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 disabled={loading}
@@ -225,9 +197,9 @@ export default function DrillsPage() {
                   variant="outline"
                   onClick={() => { setIsStatusOpen(!isStatusOpen); setIsSortOpen(false); }}
                   disabled={loading}
-                  className={`h-10 px-4 rounded-xl border-white/[0.06] hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2 ${
-                    isScrolled ? "bg-[#0a0a0f] border-white/[0.08]" : "bg-[#111118]/60"
-                  } ${activeFiltersCount > 0 ? "border-blue-500/30 bg-blue-500/5" : ""}`}
+                  className={`h-10 px-4 rounded-xl border-white/[0.06] bg-[#111118]/60 hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2 ${
+                    activeFiltersCount > 0 ? "border-blue-500/30 bg-blue-500/5" : ""
+                  }`}
                 >
                   <Zap className="h-4 w-4 text-neutral-400" />
                   <span className="text-sm text-neutral-300">
@@ -270,9 +242,7 @@ export default function DrillsPage() {
                   variant="outline"
                   onClick={() => { setIsSortOpen(!isSortOpen); setIsStatusOpen(false); }}
                   disabled={loading}
-                  className={`h-10 px-4 rounded-xl border-white/[0.06] hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2 ${
-                    isScrolled ? "bg-[#0a0a0f] border-white/[0.08]" : "bg-[#111118]/60"
-                  }`}
+                  className="h-10 px-4 rounded-xl border-white/[0.06] bg-[#111118]/60 hover:bg-white/[0.05] transition-all disabled:opacity-50 gap-2"
                 >
                   <ArrowUpDown className="h-4 w-4 text-neutral-400" />
                   <span className="text-sm text-neutral-300">
@@ -318,17 +288,14 @@ export default function DrillsPage() {
           </div>
         </div>
 
-        {/* Spacer when floating */}
-        <div className={`transition-all duration-500 ${isScrolled ? "h-4" : "h-0"}`} />
-
-        {/* Drills Table */}
-        <div className="px-8 pt-4 pb-8">
+        {/* Drills Table - Reduced spacing */}
+        <div className="px-8 pt-1 pb-8">
           {loading ? (
             <LoadingTable />
           ) : sortedDrills.length === 0 ? (
             <EmptyState hasDrills={drills.length > 0} />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Table Header */}
               <div className="grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 <div>
@@ -347,7 +314,7 @@ export default function DrillsPage() {
                 <div className="text-right">Actions</div>
               </div>
 
-              {/* Table Rows - Card Style */}
+              {/* Table Rows - Card Style with more space */}
               {sortedDrills.map((drill) => {
                 const config = statusConfig[drill.status] || statusConfig.draft;
                 const stats = generateMockStats(drill);
@@ -356,11 +323,24 @@ export default function DrillsPage() {
                                 drill.status === "closed" ? 100 : 
                                 drill.status === "draft" ? 0 : Math.floor(Math.random() * 60);
 
+                async function handleDelete(e: React.MouseEvent) {
+                  e.preventDefault();
+                  if (!confirm("Are you sure you want to delete this drill?")) return;
+                  try {
+                    const res = await fetch(`/api/drills/${drill.id}`, { method: "DELETE" });
+                    if (res.ok) {
+                      load();
+                    }
+                  } catch (error) {
+                    console.error("Failed to delete drill:", error);
+                  }
+                }
+
                 return (
                   <Link
                     key={drill.id}
                     href={`/dashboard/drills/${drill.id}`}
-                    className={`grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-4 rounded-xl border transition-all duration-200 group ${
+                    className={`grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-5 rounded-xl border transition-all duration-200 group ${
                       isSelected 
                         ? "bg-blue-500/5 border-blue-500/30" 
                         : "bg-[#111118]/40 border-white/[0.06] hover:border-white/[0.12] hover:bg-[#111118]/60"
@@ -431,17 +411,17 @@ export default function DrillsPage() {
                     <div className="flex items-center justify-end gap-1">
                       {drill.status === "ready" && (
                         <button 
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-green-400 hover:bg-green-500/10 transition-colors"
+                          className="w-9 h-9 flex items-center justify-center rounded-lg text-green-400 hover:bg-green-500/10 transition-colors"
                           onClick={(e) => { e.preventDefault(); /* Launch drill */ }}
                         >
                           <Play className="h-4 w-4 fill-current" />
                         </button>
                       )}
                       <button 
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.05] transition-colors"
-                        onClick={(e) => e.preventDefault()}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        onClick={handleDelete}
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </Link>
@@ -458,7 +438,7 @@ export default function DrillsPage() {
 // Loading Table Skeleton
 function LoadingTable() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Header Skeleton */}
       <div className="grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-3">
         <div className="h-4 w-4 bg-white/[0.05] rounded animate-pulse" />
@@ -475,7 +455,7 @@ function LoadingTable() {
       {[1, 2, 3, 4, 5].map((i) => (
         <div 
           key={i}
-          className="grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-4 rounded-xl bg-[#111118]/40 border border-white/[0.06]"
+          className="grid grid-cols-[40px_2fr_120px_100px_80px_80px_80px_100px] gap-4 px-4 py-5 rounded-xl bg-[#111118]/40 border border-white/[0.06]"
         >
           <div className="flex items-center">
             <div className="h-4 w-4 bg-white/[0.05] rounded animate-pulse" />
@@ -504,8 +484,8 @@ function LoadingTable() {
             <div className="h-4 w-6 bg-white/[0.05] rounded animate-pulse" />
           </div>
           <div className="flex items-center justify-end gap-1">
-            <div className="h-8 w-8 bg-white/[0.05] rounded-lg animate-pulse" />
-            <div className="h-8 w-8 bg-white/[0.05] rounded-lg animate-pulse" />
+            <div className="h-9 w-9 bg-white/[0.05] rounded-lg animate-pulse" />
+            <div className="h-9 w-9 bg-white/[0.05] rounded-lg animate-pulse" />
           </div>
         </div>
       ))}

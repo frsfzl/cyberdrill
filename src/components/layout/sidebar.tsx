@@ -62,9 +62,9 @@ export function Sidebar() {
   }, [activeIndex]);
 
   return (
-    <aside className="flex h-screen w-64 flex-col bg-[#0a0a0f]">
+    <aside className="flex h-screen w-52 flex-col bg-[#0a0a0f]">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 px-6">
+      <div className="flex h-16 items-center gap-2.5 px-5">
         <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 flex items-center justify-center overflow-hidden">
           <Shield className="h-4 w-4 text-blue-400" />
         </div>
@@ -81,10 +81,10 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav ref={navRef} className="flex-1 space-y-1 p-4 relative">
+      <nav ref={navRef} className="flex-1 space-y-1 p-3 relative">
         {/* Liquid Blob Background */}
         <div
-          className="absolute left-4 right-4 bg-white/[0.08] rounded-xl pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          className="absolute left-3 right-3 bg-white/[0.08] rounded-xl pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
           style={{
             top: blobStyle.top,
             height: blobStyle.height,
@@ -115,7 +115,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               ref={(el) => { itemRefs.current[index] = el; }}
-              className="relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-300 rounded-xl group"
+              className="relative flex items-center gap-2.5 px-2.5 py-2 text-sm font-medium transition-all duration-300 rounded-xl group"
               onMouseEnter={() => {
                 // Subtle preview effect could go here
               }}
@@ -162,7 +162,7 @@ export function Sidebar() {
       </nav>
 
       {/* Profile Section - No border */}
-      <div className="p-4">
+      <div className="p-3">
         <ProfileDropdown />
       </div>
 
@@ -219,7 +219,7 @@ function ProfileDropdown() {
       {/* Profile Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 group"
+        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 group"
       >
         {/* Avatar */}
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/30 flex items-center justify-center">
