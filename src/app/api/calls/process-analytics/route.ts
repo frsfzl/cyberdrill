@@ -3,6 +3,7 @@ import { supabase } from "@/lib/db";
 import { processCallAnalytics } from "@/lib/delivery/vapi";
 import { createLog } from "@/lib/models/log";
 import { Resend } from "resend";
+import { storeEmployeeDrillResult } from "@/lib/backboard";
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -272,8 +273,20 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        // Send results email
+        // Store in Backboard for AI memory and recommendations
         const employee = interaction.employees;
+        await storeEmployeeDrillResult(interaction.employee_id, {
+          date: new Date(),
+          scenario: 'vishing_call',
+          riskScore: analytics['Training Recommendations']?.riskScore,
+          fellForPhish: analytics['Phishing Susceptibility Analysis']?.fellForPhish,
+          redFlagsMissed: analytics['Red Flags Recognition']?.redFlagsMissed,
+          weaknesses: analytics['Training Recommendations']?.weaknesses,
+          department: employee?.department || 'Unknown',
+          analytics, // Pass full analytics for scenario type detection
+        });
+
+        // Send results email
         if (employee?.email) {
           console.log(`[Process Analytics] 📧 Sending results email to ${employee.email}...`);
 

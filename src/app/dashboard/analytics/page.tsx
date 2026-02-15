@@ -96,6 +96,10 @@ export default function AnalyticsPage() {
   const [recentEmailInteractions, setRecentEmailInteractions] = useState<Array<Interaction & { employee: Employee }>>([]);
   const [clearingCampaigns, setClearingCampaigns] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState<string[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [predictiveRisks, setPredictiveRisks] = useState<any>(null);
+  const [loadingPredictive, setLoadingPredictive] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -108,6 +112,13 @@ export default function AnalyticsPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch predictive risks when data is loaded
+  useEffect(() => {
+    if (data?.departmentBreakdown?.length) {
+      fetchPredictiveRisks();
+    }
+  }, [data]);
 
   async function processCallAnalytics() {
     try {
@@ -133,6 +144,55 @@ export default function AnalyticsPage() {
 
     // Fetch recent interactions
     fetchRecentInteractions();
+
+    // Fetch AI recommendations
+    fetchAIRecommendations();
+  }
+
+  async function fetchAIRecommendations() {
+    setLoadingRecommendations(true);
+    try {
+      const res = await fetch("/api/analytics/recommendations");
+      if (res.ok) {
+        const data = await res.json();
+        setAiRecommendations(data.recommendations || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch AI recommendations:", error);
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  }
+
+  async function fetchPredictiveRisks() {
+    if (!data?.departmentBreakdown?.length) return;
+
+    setLoadingPredictive(true);
+    try {
+      // Fetch risk trends for the top 3 highest-risk departments
+      const topRiskDepts = data.departmentBreakdown
+        .sort((a, b) => b.submitRate - a.submitRate)
+        .slice(0, 3);
+
+      const riskPromises = topRiskDepts.map(dept =>
+        fetch(`/api/analytics/department-trends?department=${encodeURIComponent(dept.department)}`)
+          .then(res => res.ok ? res.json() : null)
+      );
+
+      const results = await Promise.all(riskPromises);
+      const validResults = results.filter(r => r !== null);
+
+      setPredictiveRisks({
+        departments: validResults,
+        topVulnerabilities: validResults
+          .flatMap((r: any) => r.trends?.trendingVulnerabilities || [])
+          .slice(0, 5),
+      });
+    } catch (error) {
+      console.error("Failed to fetch predictive risks:", error);
+    } finally {
+      setLoadingPredictive(false);
+    }
   }
 
   async function fetchRecentInteractions() {
@@ -730,39 +790,177 @@ export default function AnalyticsPage() {
           </Card>
         )}
 
-        {/* Recommendations */}
-        <Card className="border-l-4 border-l-warning">
+        {/* Predictive Risk Analysis */}
+        <Card className="border-l-4 border-l-red-500">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              AI-Generated Recommendations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {departmentBreakdown
-                .filter((d) => d.submitRate >= 20)
-                .map((dept) => (
-                  <div key={dept.department} className="flex gap-4 p-4 rounded-lg bg-warning/5 border border-warning/20">
-                    <div className="flex-1">
-                      <h4 className="font-semibold mb-1">{dept.department}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        High vulnerability detected with {dept.submitRate.toFixed(1)}% submission rate.
-                        Recommend mandatory security awareness training within 30 days and follow-up drill
-                        within 60 days.
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Schedule Training
-                    </Button>
-                  </div>
-                ))}
-              {departmentBreakdown.filter((d) => d.submitRate >= 20).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No critical recommendations at this time. Continue monitoring and conducting regular drills.
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-red-500/10">
+                  <Target className="h-5 w-5 text-red-500" />
+                </div>
+                <div>
+                  <CardTitle>🔮 Predictive Risk Analysis</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    AI-powered predictions using Backboard.io memory analysis
+                  </p>
+                </div>
+              </div>
+              {loadingPredictive && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               )}
             </div>
+          </CardHeader>
+          <CardContent>
+            {loadingPredictive ? (
+              <div className="text-center py-8">
+                <Activity className="h-8 w-8 text-muted-foreground mx-auto animate-pulse mb-2" />
+                <p className="text-sm text-muted-foreground">Analyzing historical patterns...</p>
+              </div>
+            ) : predictiveRisks?.departments?.length > 0 ? (
+              <div className="space-y-6">
+                {/* Top Trending Vulnerabilities */}
+                {predictiveRisks.topVulnerabilities?.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-orange-500" />
+                      Trending Vulnerabilities Across Organization
+                    </h3>
+                    <div className="space-y-2">
+                      {predictiveRisks.topVulnerabilities.slice(0, 5).map((vuln: string, idx: number) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                          <div className="flex-shrink-0">
+                            <div className="h-7 w-7 rounded-full bg-red-500/20 flex items-center justify-center">
+                              <span className="text-xs font-bold text-red-600">{idx + 1}</span>
+                            </div>
+                          </div>
+                          <p className="text-sm flex-1">{vuln}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Department Risk Predictions */}
+                <div>
+                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    High-Risk Departments
+                  </h3>
+                  <div className="space-y-3">
+                    {predictiveRisks.departments.map((dept: any, idx: number) => (
+                      <div key={idx} className="p-4 rounded-lg border bg-card hover:shadow-md transition-all">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold">{dept.department}</h4>
+                            <p className="text-xs text-muted-foreground">{dept.employeeCount} employees</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-red-600">
+                              {dept.trends?.avgRiskScore || 0}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Risk Score</p>
+                          </div>
+                        </div>
+
+                        {dept.trends?.trendingVulnerabilities?.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Top Weaknesses:</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {dept.trends.trendingVulnerabilities.slice(0, 3).map((vuln: string, i: number) => (
+                                <Badge key={i} variant="destructive" className="text-xs">
+                                  {vuln}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {dept.trends?.highRiskEmployees?.length > 0 && (
+                          <div className="pt-3 border-t">
+                            <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                              High-Risk Employees:
+                            </p>
+                            <p className="text-xs text-red-600 font-medium">
+                              {dept.trends.highRiskEmployees.join(', ')}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 rounded-full bg-red-500"></span>
+                    Powered by Backboard.io AI • Updated in real-time
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">
+                  Collecting drill data for predictive analysis...
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Recommendations from Backboard */}
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <AlertTriangle className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>AI-Powered Recommendations</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Generated by Backboard.io memory analysis
+                  </p>
+                </div>
+              </div>
+              {loadingRecommendations && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingRecommendations ? (
+              <div className="text-center py-8">
+                <Activity className="h-8 w-8 text-muted-foreground mx-auto animate-pulse mb-2" />
+                <p className="text-sm text-muted-foreground">Analyzing drill history with AI...</p>
+              </div>
+            ) : aiRecommendations.length > 0 ? (
+              <div className="space-y-3">
+                {aiRecommendations.map((recommendation, idx) => (
+                  <div key={idx} className="flex gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">{idx + 1}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed flex-1">
+                      {recommendation}
+                    </p>
+                  </div>
+                ))}
+                <div className="pt-4 border-t">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                    Powered by Backboard.io AI Memory • Based on {departmentBreakdown.length} departments
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">
+                  Run more drills to get AI-powered insights and recommendations.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
